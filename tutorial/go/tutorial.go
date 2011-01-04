@@ -48,8 +48,8 @@
 package tutorial
 
 import (
-  "os"
-  // "shared"
+	"os"
+	// "shared"
 )
 
 /**
@@ -63,12 +63,12 @@ type MyInteger int32
  * types and structs are specified using JSON notation.
  */
 const (
-  INT32CONSTANT = 9853
+	INT32CONSTANT = 9853
 )
 
-var MAPCONSTANT = map[string] string {
-    "hello": "world",
-    "goodnight": "moon",
+var MAPCONSTANT = map[string]string{
+	"hello":     "world",
+	"goodnight": "moon",
 }
 
 
@@ -77,11 +77,12 @@ var MAPCONSTANT = map[string] string {
  * and start at 1 if not supplied, C style again.
  */
 type Operation int16
+
 const (
-  OPERATION_ADD Operation = 1
-  OPERATION_SUBTRACT Operation = 2
-  OPERATION_MULTIPLY Operation = 3
-  OPERATION_DIVIDE Operation = 4
+	OPERATION_ADD      Operation = 1
+	OPERATION_SUBTRACT Operation = 2
+	OPERATION_MULTIPLY Operation = 3
+	OPERATION_DIVIDE   Operation = 4
 )
 
 /**
@@ -94,23 +95,23 @@ const (
  * manual management in some languages.
  */
 type Work struct {
-  num1 int32
-  num2 int32
-  op Operation
-  comment string
+	num1    int32
+	num2    int32
+	op      Operation
+	comment string
 }
 
 func NewWork() *Work {
-  return &Work{num1: 0} //only put in defaults
+	return &Work{num1: 0} //only put in defaults
 }
 
 /**
  * Structs can also be exceptions, if they are nasty.
  */
 type InvalidOperation struct {
-  os.Error // for exceptions
-  what int32
-  why string
+	os.Error // for exceptions
+	what     int32
+	why      string
 }
 
 /**
@@ -119,12 +120,12 @@ type InvalidOperation struct {
  */
 
 type Calculator interface {
-  SharedService //extends
-  
-  ping()
-  add(num1 int32, num2 int32) int32
-  calculate(logid int32, w *Work) // figure out invalid operation
-  zip() //oneway, need anything special??
+	SharedService //extends
+
+	ping()
+	add(num1 int32, num2 int32) int32
+	calculate(logid int32, w *Work) // figure out invalid operation
+	zip()                           //oneway, need anything special??
 }
 
 /**

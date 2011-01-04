@@ -20,6 +20,7 @@ type TProtocol interface {
 	WriteI32(int32)
 	WriteI64(int64)
 	WriteDouble(float64)
+	WriteString(string)
 
 	ReadMessageBegin() (name string, ttype TType, seq int32)
 	ReadMessageEnd()
