@@ -43,7 +43,7 @@ func (p *TBinaryProtocol) WriteFieldBegin(name string, ttype TType, id int16) {
 }
 func (p *TBinaryProtocol) WriteFieldEnd() {}
 func (p *TBinaryProtocol) WriteFieldStop() {
-	p.WriteByte(byte(STOP))
+	p.WriteByte(byte(TTYPE_STOP))
 }
 func (p *TBinaryProtocol) WriteMapBegin(ktype TType, vtype TType, size int32) {
 	p.WriteByte(byte(ktype))
@@ -131,7 +131,7 @@ func (p *TBinaryProtocol) ReadStructEnd() {}
 
 func (p *TBinaryProtocol) ReadFieldBegin() (name string, ttype TType, id int16) {
 	ttype = TType(p.ReadByte())
-	if ttype == STOP {
+	if ttype == TTYPE_STOP {
 		id = 0
 	} else {
 		id = p.ReadI16()

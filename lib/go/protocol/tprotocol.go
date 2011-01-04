@@ -41,3 +41,55 @@ type TProtocol interface {
 	ReadDouble() float64
 	ReadString() string
 }
+
+func SkipType(p TProtocol, ttype TType) {
+	switch ttype {
+	case TTYPE_STOP:
+		return
+
+	case TTYPE_BOOL:
+		p.ReadBool()
+	case TTYPE_BYTE:
+		p.ReadByte()
+	case TTYPE_I16:
+		p.ReadI16()
+	case TTYPE_I32:
+		p.ReadI32()
+	case TTYPE_I64:
+		p.ReadI64()
+	case TTYPE_DOUBLE:
+		p.ReadDouble()
+	case TTYPE_STRING:
+		p.ReadString()
+	case TTYPE_STRUCT:
+		p.ReadStructBegin()
+		for {
+			_, ttype, _ = p.ReadFieldBegin()
+			if ttype == TTYPE_STOP {
+				break
+			}
+			SkipType(p, ttype)
+			p.ReadFieldEnd()
+		}
+		p.ReadStructEnd()
+	case TTYPE_MAP:
+		ktype, vtype, size := p.ReadMapBegin()
+		for i := int32(0); i < size; i++ {
+			SkipType(p, ktype)
+			SkipType(p, vtype)
+		}
+		p.ReadMapEnd()
+	case TTYPE_SET:
+		etype, size := p.ReadSetBegin()
+		for i := int32(0); i < size; i++ {
+			SkipType(p, etype)
+		}
+		p.ReadSetEnd()
+	case TTYPE_LIST:
+		etype, size := p.ReadListBegin()
+		for i := int32(0); i < size; i++ {
+			SkipType(p, etype)
+		}
+		p.ReadListEnd()
+	}
+}
