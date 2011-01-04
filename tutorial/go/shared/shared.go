@@ -22,17 +22,17 @@
  * these definitions.
  */
 
-package tutorial
+package shared
 
 import (
 	"thrift/protocol"
 )
 
 type SharedStruct struct {
-	Key        *int32
-	Value      string
-	isSetKey   bool
-	isSetValue bool
+	_key        int32
+	_value      string
+	_isSetKey   bool
+	_isSetValue bool
 }
 
 func NewSharedStruct() *SharedStruct {
@@ -51,13 +51,14 @@ func (s *SharedStruct) Read(iprot protocol.TProtocol) {
 		case 1: // key
 			if ftype == protocol.TTYPE_I32 {
 				key := iprot.ReadI32()
-				s.Key = &key
+				s.SetKey(key)
 			} else {
 				protocol.SkipType(iprot, ftype)
 			}
 		case 2: // value
 			if ftype == protocol.TTYPE_STRING {
-				s.Value = iprot.ReadString()
+				value := iprot.ReadString()
+				s.SetValue(value)
 			} else {
 				protocol.SkipType(iprot, ftype)
 			}
@@ -71,18 +72,37 @@ func (s *SharedStruct) Read(iprot protocol.TProtocol) {
 
 func (s *SharedStruct) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructBegin("SharedStruct")
-	if s.isSetKey {
+	if s._isSetKey {
 		oprot.WriteFieldBegin("key", protocol.TTYPE_I32, 1)
-		oprot.WriteI32(*s.Key)
+		oprot.WriteI32(s._key)
 		oprot.WriteFieldEnd()
 	}
-	if s.isSetValue {
+	if s._isSetValue {
 		oprot.WriteFieldBegin("value", protocol.TTYPE_STRING, 2)
-		oprot.WriteString(s.Value)
+		oprot.WriteString(s._value)
 		oprot.WriteFieldEnd()
 	}
 	oprot.WriteFieldStop()
 	oprot.WriteStructEnd()
+}
+
+
+func (s *SharedStruct) GetKey() int32 {
+	return s._key
+}
+
+func (s *SharedStruct) SetKey(key int32) {
+	s._key = key
+	s._isSetKey = true
+}
+
+func (s *SharedStruct) GetValue() string {
+	return s._value
+}
+
+func (s *SharedStruct) SetValue(value string) {
+	s._value = value
+	s._isSetValue = true
 }
 
 type SharedService interface {

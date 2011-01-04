@@ -18,7 +18,7 @@ type TBinaryProtocol struct {
 	strictWrite bool
 }
 
-func New(transport transport.TTransport, strictRead, strictWrite bool) *TBinaryProtocol {
+func NewTBinaryProtocol(transport transport.TTransport, strictRead, strictWrite bool) *TBinaryProtocol {
 	return &TBinaryProtocol{transport: transport, strictRead: strictRead, strictWrite: strictWrite}
 }
 
@@ -174,27 +174,27 @@ func (p *TBinaryProtocol) ReadBool() bool {
 }
 
 func (p *TBinaryProtocol) ReadByte() (b byte) {
-	binary.Read(p.transport, binary.BigEndian, b)
+	binary.Read(p.transport, binary.BigEndian, &b)
 	return
 }
 
 func (p *TBinaryProtocol) ReadI16() (i int16) {
-	binary.Read(p.transport, binary.BigEndian, i)
+	binary.Read(p.transport, binary.BigEndian, &i)
 	return
 }
 
 func (p *TBinaryProtocol) ReadI32() (i int32) {
-	binary.Read(p.transport, binary.BigEndian, i)
+	binary.Read(p.transport, binary.BigEndian, &i)
 	return
 }
 
 func (p *TBinaryProtocol) ReadI64() (i int64) {
-	binary.Read(p.transport, binary.BigEndian, i)
+	binary.Read(p.transport, binary.BigEndian, &i)
 	return
 }
 
 func (p *TBinaryProtocol) ReadDouble() (d float64) {
-	binary.Read(p.transport, binary.BigEndian, d)
+	binary.Read(p.transport, binary.BigEndian, &d)
 	return
 }
 
