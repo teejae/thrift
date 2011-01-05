@@ -33,6 +33,7 @@ func (s *TSocket) Open() (err os.Error) {
 		return
 	}
 	s.conn = conn
+	return
 }
 
 func (s *TSocket) Close() {
