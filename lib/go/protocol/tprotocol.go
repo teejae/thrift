@@ -1,5 +1,9 @@
 package protocol
 
+import (
+	"thrift/transport"
+)
+
 type TProtocol interface {
 	WriteMessageBegin(name string, ttype TType, seq int32)
 	WriteMessageEnd()
@@ -41,6 +45,9 @@ type TProtocol interface {
 	ReadI64() int64
 	ReadDouble() float64
 	ReadString() string
+
+	// utility
+	GetTransport() transport.TTransport
 }
 
 func SkipType(p TProtocol, ttype TType) {

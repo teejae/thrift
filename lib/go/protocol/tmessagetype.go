@@ -1,0 +1,8 @@
+package protocol
+
+const (
+	TMESSAGETYPE_CALL      = 1
+	TMESSAGETYPE_REPLY     = 2
+	TMESSAGETYPE_EXCEPTION = 3
+	TMESSAGETYPE_ONEWAY    = 4
+)

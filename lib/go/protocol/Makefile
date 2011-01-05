@@ -3,6 +3,7 @@ include $(GOROOT)/src/Make.inc
 TARG=thrift/protocol
 GOFILES=\
 	tbinaryprotocol.go\
+	tmessagetype.go\
 	tprotocol.go\
 	ttype.go\
 

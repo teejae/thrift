@@ -1,8 +1,10 @@
 package transport
 
 import (
+	"log"
 	"net"
 	"os"
+	"strconv"
 )
 
 type TSocket struct {
@@ -19,9 +21,17 @@ func newTSocketFromConnection(conn *net.TCPConn) *TSocket {
 	return &TSocket{conn: conn}
 }
 
-func (s *TSocket) Open() {
-	raddr, _ := net.ResolveTCPAddr(s.host + ":" + string(s.port))
-	conn, _ := net.DialTCP(raddr.Network(), nil, raddr)
+func (s *TSocket) Open() (err os.Error) {
+	raddr, err := net.ResolveTCPAddr(s.host + ":" + strconv.Itoa(s.port))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	conn, err := net.DialTCP(raddr.Network(), nil, raddr)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	s.conn = conn
 }
 
@@ -54,7 +64,7 @@ func NewTServerSocket(port int) *TServerSocket {
 }
 
 func (s *TServerSocket) Listen() {
-	laddr, _ := net.ResolveTCPAddr(":" + string(s.port))
+	laddr, _ := net.ResolveTCPAddr(":" + strconv.Itoa(s.port))
 	listener, _ := net.ListenTCP(laddr.Network(), laddr)
 	s.listener = listener
 }

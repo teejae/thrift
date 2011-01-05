@@ -5,17 +5,15 @@ import (
 )
 
 type TFileTransport struct {
-	name string
 	file *os.File
 }
 
 
-func NewTFileTransport(name string) *TFileTransport {
-	return &TFileTransport{name: name}
+func NewTFileTransport(file *os.File) *TFileTransport {
+	return &TFileTransport{file: file}
 }
 
 func (t *TFileTransport) Open() {
-	t.file, _ = os.Open(t.name, os.O_RDWR, 0)
 }
 
 func (t *TFileTransport) Close() {

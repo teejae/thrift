@@ -205,3 +205,7 @@ func (p *TBinaryProtocol) ReadString() (s string) {
 	s = string(s_buf)
 	return
 }
+
+func (p *TBinaryProtocol) GetTransport() transport.TTransport {
+	return p.transport
+}

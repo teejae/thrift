@@ -29,10 +29,8 @@ import (
 )
 
 type SharedStruct struct {
-	_key        int32
-	_value      string
-	_isSetKey   bool
-	_isSetValue bool
+	Key   *int32
+	Value *string
 }
 
 func NewSharedStruct() *SharedStruct {
@@ -50,15 +48,15 @@ func (s *SharedStruct) Read(iprot protocol.TProtocol) {
 		switch fid {
 		case 1: // key
 			if ftype == protocol.TTYPE_I32 {
-				key := iprot.ReadI32()
-				s.SetKey(key)
+				v := iprot.ReadI32()
+				s.Key = &v
 			} else {
 				protocol.SkipType(iprot, ftype)
 			}
 		case 2: // value
 			if ftype == protocol.TTYPE_STRING {
-				value := iprot.ReadString()
-				s.SetValue(value)
+				v := iprot.ReadString()
+				s.Value = &v
 			} else {
 				protocol.SkipType(iprot, ftype)
 			}
@@ -72,14 +70,14 @@ func (s *SharedStruct) Read(iprot protocol.TProtocol) {
 
 func (s *SharedStruct) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructBegin("SharedStruct")
-	if s._isSetKey {
+	if s.Key != nil {
 		oprot.WriteFieldBegin("key", protocol.TTYPE_I32, 1)
-		oprot.WriteI32(s._key)
+		oprot.WriteI32(*s.Key)
 		oprot.WriteFieldEnd()
 	}
-	if s._isSetValue {
+	if s.Value != nil {
 		oprot.WriteFieldBegin("value", protocol.TTYPE_STRING, 2)
-		oprot.WriteString(s._value)
+		oprot.WriteString(*s.Value)
 		oprot.WriteFieldEnd()
 	}
 	oprot.WriteFieldStop()
@@ -87,24 +85,139 @@ func (s *SharedStruct) Write(oprot protocol.TProtocol) {
 }
 
 
-func (s *SharedStruct) GetKey() int32 {
-	return s._key
-}
-
-func (s *SharedStruct) SetKey(key int32) {
-	s._key = key
-	s._isSetKey = true
-}
-
-func (s *SharedStruct) GetValue() string {
-	return s._value
-}
-
-func (s *SharedStruct) SetValue(value string) {
-	s._value = value
-	s._isSetValue = true
-}
-
 type SharedService interface {
-	getStruct(key int32) SharedStruct
+	GetStruct(key int32) *SharedStruct
+}
+
+type SharedServiceClient struct {
+	iprot protocol.TProtocol
+	oprot protocol.TProtocol
+	seqid int32
+}
+
+func NewSharedServiceClient(iprot, oprot protocol.TProtocol) *SharedServiceClient {
+	return &SharedServiceClient{iprot: iprot, oprot: oprot}
+}
+
+func (s *SharedServiceClient) GetStruct(key int32) *SharedStruct {
+	s.send_getStruct(key)
+	return s.recv_getStruct()
+}
+
+func (c *SharedServiceClient) send_getStruct(key int32) {
+	c.oprot.WriteMessageBegin("getStruct", protocol.TMESSAGETYPE_CALL, c.seqid)
+	args := New_getStruct_args()
+	args.Key = &key
+	args.Write(c.oprot)
+	c.oprot.WriteMessageEnd()
+	c.oprot.GetTransport().Flush()
+}
+
+func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
+	_, mtype, _ := c.iprot.ReadMessageBegin()
+	defer c.iprot.ReadMessageEnd()
+
+	if mtype == protocol.TMESSAGETYPE_EXCEPTION {
+		// FIXME: finish this
+		// x = TApplicationException()
+		// x.read(self._iprot)
+		// self._iprot.readMessageEnd()
+		// raise x	
+	}
+	result := New_getStruct_result()
+	result.Read(c.iprot)
+	if result.Success != nil {
+		return result.Success
+	}
+	// FIXME
+	// raise TApplicationException(TApplicationException.MISSING_RESULT, "getStruct failed: unknown result");
+	panic("getStruct failed: unknown result")
+}
+
+type getStruct_args struct {
+	Key *int32
+}
+
+func New_getStruct_args() *getStruct_args {
+	return &getStruct_args{}
+}
+
+func (s *getStruct_args) Write(oprot protocol.TProtocol) {
+	oprot.WriteStructBegin("getStruct_args")
+	if s.Key != nil {
+		oprot.WriteFieldBegin("key", protocol.TTYPE_I32, 1)
+		oprot.WriteI32(*s.Key)
+		oprot.WriteFieldEnd()
+	}
+	oprot.WriteFieldStop()
+	oprot.WriteStructEnd()
+}
+
+func (s *getStruct_args) Read(iprot protocol.TProtocol) {
+	iprot.ReadStructBegin()
+	defer iprot.ReadStructEnd()
+
+	for {
+		_, ftype, fid := iprot.ReadFieldBegin()
+		if ftype == protocol.TTYPE_STOP {
+			break
+		}
+
+		switch fid {
+		case 1: // key
+			if ftype == protocol.TTYPE_I32 {
+				v := iprot.ReadI32()
+				s.Key = &v
+			} else {
+				protocol.SkipType(iprot, ftype)
+			}
+		default: // unknown
+			protocol.SkipType(iprot, ftype)
+		}
+		iprot.ReadFieldEnd()
+	}
+}
+
+type getStruct_result struct {
+	Success *SharedStruct
+}
+
+func New_getStruct_result() *getStruct_result {
+	return &getStruct_result{}
+}
+
+func (s *getStruct_result) Write(oprot protocol.TProtocol) {
+	oprot.WriteStructBegin("getStruct_result")
+	if s.Success != nil {
+		oprot.WriteFieldBegin("success", protocol.TTYPE_STRUCT, 0)
+		s.Success.Write(oprot)
+		oprot.WriteFieldEnd()
+	}
+	oprot.WriteFieldStop()
+	oprot.WriteStructEnd()
+}
+
+func (s *getStruct_result) Read(iprot protocol.TProtocol) {
+	iprot.ReadStructBegin()
+	defer iprot.ReadStructEnd()
+
+	for {
+		_, ftype, fid := iprot.ReadFieldBegin()
+		if ftype == protocol.TTYPE_STOP {
+			break
+		}
+
+		switch fid {
+		case 0: // key
+			if ftype == protocol.TTYPE_STRUCT {
+				s.Success = NewSharedStruct()
+				s.Success.Read(iprot)
+			} else {
+				protocol.SkipType(iprot, ftype)
+			}
+		default: // unknown
+			protocol.SkipType(iprot, ftype)
+		}
+		iprot.ReadFieldEnd()
+	}
 }

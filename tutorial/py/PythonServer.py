@@ -34,7 +34,7 @@ from thrift.server import TServer
 
 class CalculatorHandler:
   def __init__(self):
-    self.log = {}
+    self.log = {1234: SharedStruct(1234, 'funny')}
 
   def ping(self):
     print 'ping()'
@@ -73,7 +73,7 @@ class CalculatorHandler:
     return val
 
   def getStruct(self, key):
-    print 'getStruct(%d)' % (key)
+    print 'getStruct(%d) = %s' % (key, self.log[key])
     return self.log[key]
 
   def zip(self):
