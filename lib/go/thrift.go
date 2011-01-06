@@ -6,38 +6,20 @@ import (
 )
 
 type TProcessor interface {
-	Process(iprot, oprot protocol.TProtocol) bool
+	Process(iprot, oprot protocol.TProtocol) (bool, os.Error)
 }
+
+type TExceptionType int
 
 type TException struct {
 	os.Error
-}
-
-type TApplicationExceptionType int
-
-const (
-	TAPPLICATION_EXCEPTION_UNKNOWN              TApplicationExceptionType = 0
-	TAPPLICATION_EXCEPTION_UNKNOWN_METHOD       = 1
-	TAPPLICATION_EXCEPTION_INVALID_MESSAGE_TYPE = 2
-	TAPPLICATION_EXCEPTION_WRONG_METHOD_NAME    = 3
-	TAPPLICATION_EXCEPTION_BAD_SEQUENCE_ID      = 4
-	TAPPLICATION_EXCEPTION_MISSING_RESULT       = 5
-	TAPPLICATION_EXCEPTION_INTERNAL_ERROR       = 6
-	TAPPLICATION_EXCEPTION_PROTOCOL_ERROR       = 7
-)
-
-type TApplicationException struct {
-	TException
 	Message *string
-	Type    *TApplicationExceptionType
+	Type    *TExceptionType
+	structName string
 }
 
-func NewTApplicationException(exceptionType TApplicationExceptionType, message string) *TApplicationException {
-	return &TApplicationException{Type: &exceptionType, Message: &message}
-}
-
-func (e *TApplicationException) Write(oprot protocol.TProtocol) {
-	oprot.WriteStructBegin("TApplicationException")
+func (e *TException) Write(oprot protocol.TProtocol) {
+	oprot.WriteStructBegin(e.structName)
 	if e.Message != nil {
 		oprot.WriteFieldBegin("message", protocol.TTYPE_STRING, 1)
 		oprot.WriteString(*e.Message)
@@ -51,7 +33,7 @@ func (e *TApplicationException) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructEnd()
 }
 
-func (e *TApplicationException) Read(iprot protocol.TProtocol) {
+func (e *TException) Read(iprot protocol.TProtocol) {
 	iprot.ReadStructBegin()
 	defer iprot.ReadStructEnd()
 
@@ -72,7 +54,7 @@ func (e *TApplicationException) Read(iprot protocol.TProtocol) {
 		case 2: // type
 			if ftype == protocol.TTYPE_I32 {
 				v := iprot.ReadI32()
-				t := TApplicationExceptionType(v)
+				t := TExceptionType(v)
 				e.Type = &t
 			} else {
 				protocol.SkipType(iprot, ftype)
@@ -82,4 +64,40 @@ func (e *TApplicationException) Read(iprot protocol.TProtocol) {
 		}
 		iprot.ReadFieldEnd()
 	}
+}
+
+type TApplicationExceptionType TExceptionType
+const (
+	TAPPLICATION_EXCEPTION_UNKNOWN              TApplicationExceptionType = 0
+	TAPPLICATION_EXCEPTION_UNKNOWN_METHOD       = 1
+	TAPPLICATION_EXCEPTION_INVALID_MESSAGE_TYPE = 2
+	TAPPLICATION_EXCEPTION_WRONG_METHOD_NAME    = 3
+	TAPPLICATION_EXCEPTION_BAD_SEQUENCE_ID      = 4
+	TAPPLICATION_EXCEPTION_MISSING_RESULT       = 5
+	TAPPLICATION_EXCEPTION_INTERNAL_ERROR       = 6
+	TAPPLICATION_EXCEPTION_PROTOCOL_ERROR       = 7
+)
+
+type TApplicationException TException
+
+func NewTApplicationException(exceptionType TApplicationExceptionType, message string) *TApplicationException {
+	t := TExceptionType(exceptionType)
+	return &TApplicationException{Type: &t, Message: &message, structName: "TApplicationException"}
+}
+
+type TTransportExceptionType TExceptionType
+
+const (
+  TTRANSPORT_EXCEPTION_TYPE_UNKNOWN = 0
+  TTRANSPORT_EXCEPTION_TYPE_NOT_OPEN = 1
+  TTRANSPORT_EXCEPTION_TYPE_ALREADY_OPEN = 2
+  TTRANSPORT_EXCEPTION_TYPE_TIMED_OUT = 3
+  TTRANSPORT_EXCEPTION_TYPE_END_OF_FILE = 4
+)
+
+type TTransportException TException
+
+func NewTTransportException(exceptionType TTransportExceptionType, message string) *TTransportException {
+	t := TExceptionType(exceptionType)
+	return &TTransportException{Type: &t, Message: &message, structName: "TTransportException"}
 }

@@ -16,5 +16,5 @@ type TTransport interface {
 type TServerTransport interface {
 	TTransport
 	Listen()
-	Accept()
+	Accept() TTransport
 }
