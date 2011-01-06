@@ -70,7 +70,8 @@ func (s *TServerSocket) Listen() {
 	s.listener = listener
 }
 
-func (s *TServerSocket) Accept() *TSocket {
+func (s *TServerSocket) Accept() TTransport {
 	conn, _ := s.listener.AcceptTCP()
-	return newTSocketFromConnection(conn)
+	trans := TTransport(newTSocketFromConnection(conn))
+	return trans
 }

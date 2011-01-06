@@ -2,12 +2,13 @@ package transport
 
 import (
 	"io"
+	"os"
 )
 
 type TTransport interface {
 	io.Reader
 	io.Writer
-	Open()
+	Open() os.Error
 	Close()
 	IsOpen() bool
 	Flush()

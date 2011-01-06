@@ -25,6 +25,9 @@
 package shared
 
 import (
+	"fmt"
+	"os"
+	"thrift"
 	"thrift/protocol"
 )
 
@@ -133,6 +136,50 @@ func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
 	// raise TApplicationException(TApplicationException.MISSING_RESULT, "getStruct failed: unknown result");
 	panic("getStruct failed: unknown result")
 }
+
+type processFunc func(seqid int32, iprot, oprot protocol.TProtocol)
+type processMap map[string] processFunc
+
+type SharedServiceProcessor struct {
+	handler SharedService
+	pMap processMap
+}
+
+func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
+	// map services
+	pMap := make(processMap)
+	p := &SharedServiceProcessor{handler: handler, pMap: pMap}
+	pMap["getStruct"] = func(seqid int32, iprot, oprot protocol.TProtocol) {
+		p.process_GetStruct(seqid, iprot, oprot)
+	}
+	
+	return p
+}
+
+func (p *SharedServiceProcessor) Process(iprot, oprot protocol.TProtocol) (bool, os.Error) {
+	name, _, seqid := iprot.ReadMessageBegin()
+	if f := p.pMap[name]; f != nil {
+		f(seqid, iprot, oprot)
+		return true, nil
+	}	
+	protocol.SkipType(iprot, protocol.TTYPE_STRUCT)
+	iprot.ReadMessageEnd()
+	err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))
+	return false, err
+}
+
+func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot protocol.TProtocol) {
+	args := New_getStruct_args()
+	args.Read(iprot)
+	iprot.ReadMessageEnd()
+	result := New_getStruct_result()
+	result.Success = p.handler.GetStruct(*args.Key)
+	oprot.WriteMessageBegin("getStruct", protocol.TMESSAGETYPE_REPLY, seqid)
+	result.Write(oprot)
+	oprot.WriteMessageEnd()
+	oprot.GetTransport().Flush()
+}
+
 
 type getStruct_args struct {
 	Key *int32

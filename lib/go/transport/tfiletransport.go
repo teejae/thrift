@@ -13,7 +13,8 @@ func NewTFileTransport(file *os.File) *TFileTransport {
 	return &TFileTransport{file: file}
 }
 
-func (t *TFileTransport) Open() {
+func (t *TFileTransport) Open() os.Error {
+	return nil
 }
 
 func (t *TFileTransport) Close() {

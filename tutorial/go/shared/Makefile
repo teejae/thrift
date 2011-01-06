@@ -4,6 +4,6 @@ TARG=shared
 GOFILES=\
 	shared.go\
 
-DEPS=../thrift/protocol
+DEPS=../thrift ../thrift/protocol
 
 include $(GOROOT)/src/Make.pkg
