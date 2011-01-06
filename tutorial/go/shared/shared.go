@@ -138,11 +138,11 @@ func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
 }
 
 type processFunc func(seqid int32, iprot, oprot protocol.TProtocol)
-type processMap map[string] processFunc
+type processMap map[string]processFunc
 
 type SharedServiceProcessor struct {
 	handler SharedService
-	pMap processMap
+	pMap    processMap
 }
 
 func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
@@ -152,7 +152,7 @@ func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
 	pMap["getStruct"] = func(seqid int32, iprot, oprot protocol.TProtocol) {
 		p.process_GetStruct(seqid, iprot, oprot)
 	}
-	
+
 	return p
 }
 
@@ -161,7 +161,7 @@ func (p *SharedServiceProcessor) Process(iprot, oprot protocol.TProtocol) (bool,
 	if f := p.pMap[name]; f != nil {
 		f(seqid, iprot, oprot)
 		return true, nil
-	}	
+	}
 	protocol.SkipType(iprot, protocol.TTYPE_STRUCT)
 	iprot.ReadMessageEnd()
 	err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))

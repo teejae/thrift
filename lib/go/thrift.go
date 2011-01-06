@@ -13,8 +13,8 @@ type TExceptionType int
 
 type TException struct {
 	os.Error
-	Message *string
-	Type    *TExceptionType
+	Message    *string
+	Type       *TExceptionType
 	structName string
 }
 
@@ -67,6 +67,7 @@ func (e *TException) Read(iprot protocol.TProtocol) {
 }
 
 type TApplicationExceptionType TExceptionType
+
 const (
 	TAPPLICATION_EXCEPTION_UNKNOWN              TApplicationExceptionType = 0
 	TAPPLICATION_EXCEPTION_UNKNOWN_METHOD       = 1
@@ -88,11 +89,11 @@ func NewTApplicationException(exceptionType TApplicationExceptionType, message s
 type TTransportExceptionType TExceptionType
 
 const (
-  TTRANSPORT_EXCEPTION_TYPE_UNKNOWN = 0
-  TTRANSPORT_EXCEPTION_TYPE_NOT_OPEN = 1
-  TTRANSPORT_EXCEPTION_TYPE_ALREADY_OPEN = 2
-  TTRANSPORT_EXCEPTION_TYPE_TIMED_OUT = 3
-  TTRANSPORT_EXCEPTION_TYPE_END_OF_FILE = 4
+	TTRANSPORT_EXCEPTION_TYPE_UNKNOWN      = 0
+	TTRANSPORT_EXCEPTION_TYPE_NOT_OPEN     = 1
+	TTRANSPORT_EXCEPTION_TYPE_ALREADY_OPEN = 2
+	TTRANSPORT_EXCEPTION_TYPE_TIMED_OUT    = 3
+	TTRANSPORT_EXCEPTION_TYPE_END_OF_FILE  = 4
 )
 
 type TTransportException TException

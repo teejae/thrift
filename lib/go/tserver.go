@@ -28,7 +28,7 @@ func (s *TSimpleServer) Serve() {
 		otrans := clientTransport
 		iprot := protocol.NewTBinaryProtocol(itrans, true, true)
 		oprot := protocol.NewTBinaryProtocol(otrans, true, true)
-		
+
 		for {
 			_, err := s.processor.Process(iprot, oprot)
 			if err != nil {
