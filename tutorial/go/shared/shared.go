@@ -108,7 +108,7 @@ func (s *SharedServiceClient) GetStruct(key int32) *SharedStruct {
 
 func (c *SharedServiceClient) send_getStruct(key int32) {
 	c.oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_CALL, c.seqid)
-	args := New_getStruct_args()
+	args := new_getStruct_args()
 	args.Key = &key
 	args.Write(c.oprot)
 	c.oprot.WriteMessageEnd()
@@ -126,7 +126,7 @@ func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
 		// self._iprot.readMessageEnd()
 		// raise x	
 	}
-	result := New_getStruct_result()
+	result := new_getStruct_result()
 	result.Read(c.iprot)
 	if result.Success != nil {
 		return result.Success
@@ -168,10 +168,10 @@ func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, o
 }
 
 func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot thrift.TProtocol) {
-	args := New_getStruct_args()
+	args := new_getStruct_args()
 	args.Read(iprot)
 	iprot.ReadMessageEnd()
-	result := New_getStruct_result()
+	result := new_getStruct_result()
 	result.Success = p.handler.GetStruct(*args.Key)
 	oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_REPLY, seqid)
 	result.Write(oprot)
@@ -184,7 +184,7 @@ type getStruct_args struct {
 	Key *int32
 }
 
-func New_getStruct_args() *getStruct_args {
+func new_getStruct_args() *getStruct_args {
 	return &getStruct_args{}
 }
 
@@ -228,7 +228,7 @@ type getStruct_result struct {
 	Success *SharedStruct
 }
 
-func New_getStruct_result() *getStruct_result {
+func new_getStruct_result() *getStruct_result {
 	return &getStruct_result{}
 }
 
