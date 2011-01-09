@@ -3,11 +3,10 @@ package main
 import (
 	"log"
 	"os"
-	"shared"
-	"thrift"
-	"thrift/protocol"
-	"thrift/server"
-	"thrift/transport"
+	"github.com/teejae/go-thrift/tutorial/shared"
+	"github.com/teejae/go-thrift/thrift/protocol"
+	"github.com/teejae/go-thrift/thrift/server"
+	"github.com/teejae/go-thrift/thrift/transport"
 )
 
 func main() {
@@ -17,7 +16,7 @@ func main() {
 		}
 	}()
 
-	server()
+	runServer()
 	f, _ := os.Open("shared_struct.tob", os.O_RDONLY, 0)
 
 	t := transport.NewTFileTransport(f)
@@ -51,7 +50,7 @@ func main() {
 	log.Println("getStruct -> ", s)
 }
 
-func server() {
+func runServer() {
 	processor := shared.NewSharedServiceProcessor(&Server{})
 	trans := transport.NewTServerSocket(9090)
 

@@ -1,8 +1,8 @@
 package server
 
 import (
-	"thrift"
-	"thrift/protocol"
+	"github.com/teejae/go-thrift/thrift"
+	"github.com/teejae/go-thrift/thrift/protocol"
 )
 
 type TSimpleServer struct {

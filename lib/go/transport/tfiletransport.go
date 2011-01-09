@@ -1,8 +1,8 @@
 package transport
 
 import (
+	"github.com/teejae/go-thrift/thrift"
 	"os"
-	"thrift"
 )
 
 type TFileTransport struct {

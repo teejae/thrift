@@ -27,7 +27,7 @@ package shared
 import (
 	"fmt"
 	"os"
-	"thrift"
+	"github.com/teejae/go-thrift/thrift"
 )
 
 type SharedStruct struct {

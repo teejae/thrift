@@ -1,17 +1,10 @@
 include $(GOROOT)/src/Make.inc
 
-DIRS=\
-	protocol\
-	server\
-	transport\
-
-TARG=thrift
+TARG=github.com/teejae/go-thrift/thrift
 GOFILES=\
 	thrift.go\
 	tprotocol.go\
-	ttransport.go\
 	tserver.go\
-
--include Make.deps
+	ttransport.go\
 
 include $(GOROOT)/src/Make.pkg

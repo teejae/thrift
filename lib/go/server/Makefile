@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=thrift
+TARG=github.com/teejae/go-thrift/thrift/server
 GOFILES=\
 	simpleserver.go\
 

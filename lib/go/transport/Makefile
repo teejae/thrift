@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=thrift/transport
+TARG=github.com/teejae/go-thrift/thrift/transport
 GOFILES=\
 	tfiletransport.go\
 	tsocket.go\

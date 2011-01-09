@@ -1,11 +1,11 @@
 package transport
 
 import (
+	"github.com/teejae/go-thrift/thrift"
 	"log"
 	"net"
 	"os"
 	"strconv"
-	"thrift"
 )
 
 type TSocket struct {

@@ -4,6 +4,6 @@ TARG=client
 GOFILES=\
 	client.go\
 
-DEPS=shared thrift thrift/protocol thrift/server thrift/transport
+DEPS=shared
 
 include $(GOROOT)/src/Make.cmd

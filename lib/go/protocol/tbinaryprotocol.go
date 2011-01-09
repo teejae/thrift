@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"encoding/binary"
+	"github.com/teejae/go-thrift/thrift"
 	"io"
-	"thrift"
 )
 
 const (

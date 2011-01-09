@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=thrift/protocol
+TARG=github.com/teejae/go-thrift/thrift/protocol
 GOFILES=\
 	tbinaryprotocol.go\
 
