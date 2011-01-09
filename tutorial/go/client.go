@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-	"github.com/teejae/go-thrift/tutorial/shared"
+	"shared"
 	"github.com/teejae/go-thrift/thrift/protocol"
 	"github.com/teejae/go-thrift/thrift/server"
 	"github.com/teejae/go-thrift/thrift/transport"
@@ -45,7 +45,7 @@ func main() {
 	log.Println("tsock ", tsock)
 	p = protocol.NewTBinaryProtocol(tsock, true, true)
 	c := shared.NewSharedServiceClient(p, p)
-	s = c.GetStruct(1234)
+	s, _ = c.GetStruct(1234)
 	tsock.Close()
 	log.Println("getStruct -> ", s)
 }

@@ -5,7 +5,7 @@ import (
 )
 
 type TProcessor interface {
-	Process(iprot, oprot TProtocol) (bool, os.Error)
+	Process(iprot, oprot TProtocol) (bool, *TException)
 }
 
 type TExceptionType int
@@ -15,6 +15,10 @@ type TException struct {
 	Message    *string
 	Type       *TExceptionType
 	structName string
+}
+
+func newTException(exceptionType TExceptionType, message string, structName string) *TException {
+	return &TException{Message: &message, Type: &exceptionType, structName: structName}
 }
 
 func (e *TException) Write(oprot TProtocol) {
@@ -78,11 +82,9 @@ const (
 	TAPPLICATION_EXCEPTION_PROTOCOL_ERROR       = 7
 )
 
-type TApplicationException TException
-
-func NewTApplicationException(exceptionType TApplicationExceptionType, message string) *TApplicationException {
+func NewTApplicationException(exceptionType TApplicationExceptionType, message string) *TException {
 	t := TExceptionType(exceptionType)
-	return &TApplicationException{Type: &t, Message: &message, structName: "TApplicationException"}
+	return newTException(t, message, "TApplicationException")
 }
 
 type TTransportExceptionType TExceptionType
@@ -95,9 +97,7 @@ const (
 	TTRANSPORT_EXCEPTION_TYPE_END_OF_FILE  = 4
 )
 
-type TTransportException TException
-
-func NewTTransportException(exceptionType TTransportExceptionType, message string) *TTransportException {
+func NewTTransportException(exceptionType TTransportExceptionType, message string) *TException {
 	t := TExceptionType(exceptionType)
-	return &TTransportException{Type: &t, Message: &message, structName: "TTransportException"}
+	return newTException(t, message, "TTransportException")
 }

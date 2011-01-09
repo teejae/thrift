@@ -26,7 +26,6 @@ package shared
 
 import (
 	"fmt"
-	"os"
 	"github.com/teejae/go-thrift/thrift"
 )
 
@@ -101,7 +100,7 @@ func NewSharedServiceClient(iprot, oprot thrift.TProtocol) *SharedServiceClient 
 	return &SharedServiceClient{iprot: iprot, oprot: oprot}
 }
 
-func (s *SharedServiceClient) GetStruct(key int32) *SharedStruct {
+func (s *SharedServiceClient) GetStruct(key int32) (*SharedStruct, *thrift.TException) {
 	s.send_getStruct(key)
 	return s.recv_getStruct()
 }
@@ -115,25 +114,23 @@ func (c *SharedServiceClient) send_getStruct(key int32) {
 	c.oprot.GetTransport().Flush()
 }
 
-func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
+func (c *SharedServiceClient) recv_getStruct() (*SharedStruct, *thrift.TException) {
 	_, mtype, _ := c.iprot.ReadMessageBegin()
 	defer c.iprot.ReadMessageEnd()
 
 	if mtype == thrift.TMESSAGETYPE_EXCEPTION {
-		// FIXME: finish this
-		// x = TApplicationException()
-		// x.read(self._iprot)
-		// self._iprot.readMessageEnd()
-		// raise x	
+		x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, "")
+		x.Read(c.iprot)
+		c.iprot.ReadMessageEnd()
+		return nil, x
 	}
 	result := new_getStruct_result()
 	result.Read(c.iprot)
 	if result.Success != nil {
-		return result.Success
+		return result.Success, nil
 	}
-	// FIXME
-	// raise TApplicationException(TApplicationException.MISSING_RESULT, "getStruct failed: unknown result");
-	panic("getStruct failed: unknown result")
+	x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_MISSING_RESULT, "getStruct failed: unknown result")
+	return nil, x
 }
 
 type processFunc func(seqid int32, iprot, oprot thrift.TProtocol)
@@ -155,7 +152,7 @@ func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
 	return p
 }
 
-func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, os.Error) {
+func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {
 	name, _, seqid := iprot.ReadMessageBegin()
 	if f := p.pMap[name]; f != nil {
 		f(seqid, iprot, oprot)
