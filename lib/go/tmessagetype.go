@@ -1,4 +1,4 @@
-package protocol
+package thrift
 
 const (
 	TMESSAGETYPE_CALL      = 1

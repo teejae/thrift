@@ -2,6 +2,7 @@ package transport
 
 import (
 	"os"
+	"thrift"
 )
 
 type TFileTransport struct {
@@ -9,7 +10,7 @@ type TFileTransport struct {
 }
 
 
-func NewTFileTransport(file *os.File) *TFileTransport {
+func NewTFileTransport(file *os.File) thrift.TTransport {
 	return &TFileTransport{file: file}
 }
 

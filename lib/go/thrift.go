@@ -2,11 +2,10 @@ package thrift
 
 import (
 	"os"
-	"thrift/protocol"
 )
 
 type TProcessor interface {
-	Process(iprot, oprot protocol.TProtocol) (bool, os.Error)
+	Process(iprot, oprot TProtocol) (bool, os.Error)
 }
 
 type TExceptionType int
@@ -18,14 +17,14 @@ type TException struct {
 	structName string
 }
 
-func (e *TException) Write(oprot protocol.TProtocol) {
+func (e *TException) Write(oprot TProtocol) {
 	oprot.WriteStructBegin(e.structName)
 	if e.Message != nil {
-		oprot.WriteFieldBegin("message", protocol.TTYPE_STRING, 1)
+		oprot.WriteFieldBegin("message", TTYPE_STRING, 1)
 		oprot.WriteString(*e.Message)
 		oprot.WriteFieldEnd()
 	}
-	oprot.WriteFieldBegin("type", protocol.TTYPE_I32, 2)
+	oprot.WriteFieldBegin("type", TTYPE_I32, 2)
 	oprot.WriteI32(int32(*e.Type))
 	oprot.WriteFieldEnd()
 
@@ -33,34 +32,34 @@ func (e *TException) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructEnd()
 }
 
-func (e *TException) Read(iprot protocol.TProtocol) {
+func (e *TException) Read(iprot TProtocol) {
 	iprot.ReadStructBegin()
 	defer iprot.ReadStructEnd()
 
 	for {
 		_, ftype, fid := iprot.ReadFieldBegin()
-		if ftype == protocol.TTYPE_STOP {
+		if ftype == TTYPE_STOP {
 			break
 		}
 
 		switch fid {
 		case 1: // message
-			if ftype == protocol.TTYPE_STRING {
+			if ftype == TTYPE_STRING {
 				v := iprot.ReadString()
 				e.Message = &v
 			} else {
-				protocol.SkipType(iprot, ftype)
+				SkipType(iprot, ftype)
 			}
 		case 2: // type
-			if ftype == protocol.TTYPE_I32 {
+			if ftype == TTYPE_I32 {
 				v := iprot.ReadI32()
 				t := TExceptionType(v)
 				e.Type = &t
 			} else {
-				protocol.SkipType(iprot, ftype)
+				SkipType(iprot, ftype)
 			}
 		default: // unknown
-			protocol.SkipType(iprot, ftype)
+			SkipType(iprot, ftype)
 		}
 		iprot.ReadFieldEnd()
 	}

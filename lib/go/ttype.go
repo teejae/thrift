@@ -1,4 +1,4 @@
-package protocol
+package thrift
 
 type TType uint32
 

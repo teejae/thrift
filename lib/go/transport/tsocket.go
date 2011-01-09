@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"thrift"
 )
 
 type TSocket struct {
@@ -13,11 +14,11 @@ type TSocket struct {
 	conn *net.TCPConn
 }
 
-func NewTSocket(host string, port int) *TSocket {
+func NewTSocket(host string, port int) thrift.TTransport {
 	return &TSocket{host: host, port: port}
 }
 
-func newTSocketFromConnection(conn *net.TCPConn) *TSocket {
+func newTSocketFromConnection(conn *net.TCPConn) thrift.TTransport {
 	return &TSocket{conn: conn}
 }
 
@@ -60,7 +61,7 @@ type TServerSocket struct {
 	listener *(net.TCPListener)
 }
 
-func NewTServerSocket(port int) *TServerSocket {
+func NewTServerSocket(port int) thrift.TServerTransport {
 	return &TServerSocket{port: port}
 }
 
@@ -70,8 +71,8 @@ func (s *TServerSocket) Listen() {
 	s.listener = listener
 }
 
-func (s *TServerSocket) Accept() TTransport {
+func (s *TServerSocket) Accept() thrift.TTransport {
 	conn, _ := s.listener.AcceptTCP()
-	trans := TTransport(newTSocketFromConnection(conn))
+	trans := newTSocketFromConnection(conn)
 	return trans
 }

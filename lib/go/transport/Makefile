@@ -4,6 +4,7 @@ TARG=thrift/transport
 GOFILES=\
 	tfiletransport.go\
 	tsocket.go\
-	ttransport.go\
+
+DEPS=..
 
 include $(GOROOT)/src/Make.pkg

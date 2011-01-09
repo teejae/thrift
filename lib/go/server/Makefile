@@ -1,9 +1,9 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=thrift/protocol
+TARG=thrift
 GOFILES=\
-	tbinaryprotocol.go\
+	simpleserver.go\
 
-DEPS=..
+DEPS=.. ../protocol ../transport
 
 include $(GOROOT)/src/Make.pkg

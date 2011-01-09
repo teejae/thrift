@@ -3,7 +3,7 @@ package protocol
 import (
 	"encoding/binary"
 	"io"
-	"thrift/transport"
+	"thrift"
 )
 
 const (
@@ -13,16 +13,16 @@ const (
 )
 
 type TBinaryProtocol struct {
-	transport   transport.TTransport
+	transport   thrift.TTransport
 	strictRead  bool
 	strictWrite bool
 }
 
-func NewTBinaryProtocol(transport transport.TTransport, strictRead, strictWrite bool) *TBinaryProtocol {
-	return &TBinaryProtocol{transport: transport, strictRead: strictRead, strictWrite: strictWrite}
+func NewTBinaryProtocol(transport thrift.TTransport, strictRead, strictWrite bool) thrift.TProtocol {
+	return thrift.TProtocol(&TBinaryProtocol{transport: transport, strictRead: strictRead, strictWrite: strictWrite})
 }
 
-func (p *TBinaryProtocol) WriteMessageBegin(name string, ttype TType, seq int32) {
+func (p *TBinaryProtocol) WriteMessageBegin(name string, ttype thrift.TType, seq int32) {
 	if p.strictWrite {
 		p.WriteI32(int32(VERSION_1 | ttype))
 		p.WriteString(name)
@@ -37,29 +37,29 @@ func (p *TBinaryProtocol) WriteMessageBegin(name string, ttype TType, seq int32)
 func (p *TBinaryProtocol) WriteMessageEnd()             {}
 func (p *TBinaryProtocol) WriteStructBegin(name string) {}
 func (p *TBinaryProtocol) WriteStructEnd()              {}
-func (p *TBinaryProtocol) WriteFieldBegin(name string, ttype TType, id int16) {
+func (p *TBinaryProtocol) WriteFieldBegin(name string, ttype thrift.TType, id int16) {
 	p.WriteByte(byte(ttype))
 	p.WriteI16(id)
 }
 func (p *TBinaryProtocol) WriteFieldEnd() {}
 func (p *TBinaryProtocol) WriteFieldStop() {
-	p.WriteByte(byte(TTYPE_STOP))
+	p.WriteByte(byte(thrift.TTYPE_STOP))
 }
-func (p *TBinaryProtocol) WriteMapBegin(ktype TType, vtype TType, size int32) {
+func (p *TBinaryProtocol) WriteMapBegin(ktype thrift.TType, vtype thrift.TType, size int32) {
 	p.WriteByte(byte(ktype))
 	p.WriteByte(byte(vtype))
 	p.WriteI32(size)
 }
 func (p *TBinaryProtocol) WriteMapEnd() {}
 
-func (p *TBinaryProtocol) WriteListBegin(etype TType, size int32) {
+func (p *TBinaryProtocol) WriteListBegin(etype thrift.TType, size int32) {
 	p.WriteByte(byte(etype))
 	p.WriteI32(size)
 }
 
 func (p *TBinaryProtocol) WriteListEnd() {}
 
-func (p *TBinaryProtocol) WriteSetBegin(etype TType, size int32) {
+func (p *TBinaryProtocol) WriteSetBegin(etype thrift.TType, size int32) {
 	p.WriteByte(byte(etype))
 	p.WriteI32(size)
 }
@@ -97,7 +97,7 @@ func (p *TBinaryProtocol) WriteString(s string) {
 	p.transport.Write([]byte(s))
 }
 
-func (p *TBinaryProtocol) ReadMessageBegin() (name string, ttype TType, seq int32) {
+func (p *TBinaryProtocol) ReadMessageBegin() (name string, ttype thrift.TType, seq int32) {
 	size := p.ReadI32()
 	if size < 0 {
 		version := uint32(size) & VERSION_MASK
@@ -106,7 +106,7 @@ func (p *TBinaryProtocol) ReadMessageBegin() (name string, ttype TType, seq int3
 			// throw new TProtocolError(TProtocolError.BAD_VERSION, "Bad version in readMessageBegin");
 		}
 		name = p.ReadString()
-		ttype = TType(uint32(size) & TYPE_MASK)
+		ttype = thrift.TType(uint32(size) & TYPE_MASK)
 		seq = p.ReadI32()
 	} else {
 		if p.strictRead {
@@ -115,7 +115,7 @@ func (p *TBinaryProtocol) ReadMessageBegin() (name string, ttype TType, seq int3
 		name_buf := make([]byte, size)
 		io.ReadFull(p.transport, name_buf)
 		name = string(name_buf)
-		ttype = TType(p.ReadByte())
+		ttype = thrift.TType(p.ReadByte())
 		seq = p.ReadI32()
 	}
 	return
@@ -129,9 +129,9 @@ func (p *TBinaryProtocol) ReadStructBegin() (name string) {
 
 func (p *TBinaryProtocol) ReadStructEnd() {}
 
-func (p *TBinaryProtocol) ReadFieldBegin() (name string, ttype TType, id int16) {
-	ttype = TType(p.ReadByte())
-	if ttype == TTYPE_STOP {
+func (p *TBinaryProtocol) ReadFieldBegin() (name string, ttype thrift.TType, id int16) {
+	ttype = thrift.TType(p.ReadByte())
+	if ttype == thrift.TTYPE_STOP {
 		id = 0
 	} else {
 		id = p.ReadI16()
@@ -140,25 +140,25 @@ func (p *TBinaryProtocol) ReadFieldBegin() (name string, ttype TType, id int16) 
 }
 func (p *TBinaryProtocol) ReadFieldEnd() {}
 
-func (p *TBinaryProtocol) ReadMapBegin() (ktype TType, vtype TType, size int32) {
-	ktype = TType(p.ReadByte())
-	vtype = TType(p.ReadByte())
+func (p *TBinaryProtocol) ReadMapBegin() (ktype thrift.TType, vtype thrift.TType, size int32) {
+	ktype = thrift.TType(p.ReadByte())
+	vtype = thrift.TType(p.ReadByte())
 	size = p.ReadI32()
 	return
 }
 
 func (p *TBinaryProtocol) ReadMapEnd() {}
 
-func (p *TBinaryProtocol) ReadListBegin() (etype TType, size int32) {
-	etype = TType(p.ReadByte())
+func (p *TBinaryProtocol) ReadListBegin() (etype thrift.TType, size int32) {
+	etype = thrift.TType(p.ReadByte())
 	size = p.ReadI32()
 	return
 }
 
 func (p *TBinaryProtocol) ReadListEnd() {}
 
-func (p *TBinaryProtocol) ReadSetBegin() (etype TType, size int32) {
-	etype = TType(p.ReadByte())
+func (p *TBinaryProtocol) ReadSetBegin() (etype thrift.TType, size int32) {
+	etype = thrift.TType(p.ReadByte())
 	size = p.ReadI32()
 	return
 }
@@ -206,6 +206,6 @@ func (p *TBinaryProtocol) ReadString() (s string) {
 	return
 }
 
-func (p *TBinaryProtocol) GetTransport() transport.TTransport {
+func (p *TBinaryProtocol) GetTransport() thrift.TTransport {
 	return p.transport
 }
