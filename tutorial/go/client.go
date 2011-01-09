@@ -6,6 +6,7 @@ import (
 	"shared"
 	"thrift"
 	"thrift/protocol"
+	"thrift/server"
 	"thrift/transport"
 )
 
@@ -54,7 +55,7 @@ func server() {
 	processor := shared.NewSharedServiceProcessor(&Server{})
 	trans := transport.NewTServerSocket(9090)
 
-	s := thrift.NewTSimpleServer(processor, trans)
+	s := server.NewTSimpleServer(processor, trans)
 
 	log.Println("Starting server...")
 	s.Serve()

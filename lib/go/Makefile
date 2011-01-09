@@ -1,14 +1,17 @@
 include $(GOROOT)/src/Make.inc
 
+DIRS=\
+	protocol\
+	server\
+	transport\
+
 TARG=thrift
 GOFILES=\
 	thrift.go\
-	tmessagetype.go\
 	tprotocol.go\
 	ttransport.go\
-	ttype.go\
 	tserver.go\
 
-DEPS=
+-include Make.deps
 
 include $(GOROOT)/src/Make.pkg

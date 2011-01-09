@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"os"
 	"thrift"
-	"thrift/protocol"
 )
 
 type SharedStruct struct {
@@ -40,46 +39,46 @@ func NewSharedStruct() *SharedStruct {
 	return &SharedStruct{}
 }
 
-func (s *SharedStruct) Read(iprot protocol.TProtocol) {
+func (s *SharedStruct) Read(iprot thrift.TProtocol) {
 	iprot.ReadStructBegin()
 	for {
 		_, ftype, fid := iprot.ReadFieldBegin()
-		if ftype == protocol.TTYPE_STOP {
+		if ftype == thrift.TTYPE_STOP {
 			break
 		}
 
 		switch fid {
 		case 1: // key
-			if ftype == protocol.TTYPE_I32 {
+			if ftype == thrift.TTYPE_I32 {
 				v := iprot.ReadI32()
 				s.Key = &v
 			} else {
-				protocol.SkipType(iprot, ftype)
+				thrift.SkipType(iprot, ftype)
 			}
 		case 2: // value
-			if ftype == protocol.TTYPE_STRING {
+			if ftype == thrift.TTYPE_STRING {
 				v := iprot.ReadString()
 				s.Value = &v
 			} else {
-				protocol.SkipType(iprot, ftype)
+				thrift.SkipType(iprot, ftype)
 			}
 		default: // unknown
-			protocol.SkipType(iprot, ftype)
+			thrift.SkipType(iprot, ftype)
 		}
 		iprot.ReadFieldEnd()
 	}
 	iprot.ReadStructEnd()
 }
 
-func (s *SharedStruct) Write(oprot protocol.TProtocol) {
+func (s *SharedStruct) Write(oprot thrift.TProtocol) {
 	oprot.WriteStructBegin("SharedStruct")
 	if s.Key != nil {
-		oprot.WriteFieldBegin("key", protocol.TTYPE_I32, 1)
+		oprot.WriteFieldBegin("key", thrift.TTYPE_I32, 1)
 		oprot.WriteI32(*s.Key)
 		oprot.WriteFieldEnd()
 	}
 	if s.Value != nil {
-		oprot.WriteFieldBegin("value", protocol.TTYPE_STRING, 2)
+		oprot.WriteFieldBegin("value", thrift.TTYPE_STRING, 2)
 		oprot.WriteString(*s.Value)
 		oprot.WriteFieldEnd()
 	}
@@ -93,12 +92,12 @@ type SharedService interface {
 }
 
 type SharedServiceClient struct {
-	iprot protocol.TProtocol
-	oprot protocol.TProtocol
+	iprot thrift.TProtocol
+	oprot thrift.TProtocol
 	seqid int32
 }
 
-func NewSharedServiceClient(iprot, oprot protocol.TProtocol) *SharedServiceClient {
+func NewSharedServiceClient(iprot, oprot thrift.TProtocol) *SharedServiceClient {
 	return &SharedServiceClient{iprot: iprot, oprot: oprot}
 }
 
@@ -108,7 +107,7 @@ func (s *SharedServiceClient) GetStruct(key int32) *SharedStruct {
 }
 
 func (c *SharedServiceClient) send_getStruct(key int32) {
-	c.oprot.WriteMessageBegin("getStruct", protocol.TMESSAGETYPE_CALL, c.seqid)
+	c.oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_CALL, c.seqid)
 	args := New_getStruct_args()
 	args.Key = &key
 	args.Write(c.oprot)
@@ -120,7 +119,7 @@ func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
 	_, mtype, _ := c.iprot.ReadMessageBegin()
 	defer c.iprot.ReadMessageEnd()
 
-	if mtype == protocol.TMESSAGETYPE_EXCEPTION {
+	if mtype == thrift.TMESSAGETYPE_EXCEPTION {
 		// FIXME: finish this
 		// x = TApplicationException()
 		// x.read(self._iprot)
@@ -137,7 +136,7 @@ func (c *SharedServiceClient) recv_getStruct() *SharedStruct {
 	panic("getStruct failed: unknown result")
 }
 
-type processFunc func(seqid int32, iprot, oprot protocol.TProtocol)
+type processFunc func(seqid int32, iprot, oprot thrift.TProtocol)
 type processMap map[string]processFunc
 
 type SharedServiceProcessor struct {
@@ -149,32 +148,32 @@ func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
 	// map services
 	pMap := make(processMap)
 	p := &SharedServiceProcessor{handler: handler, pMap: pMap}
-	pMap["getStruct"] = func(seqid int32, iprot, oprot protocol.TProtocol) {
+	pMap["getStruct"] = func(seqid int32, iprot, oprot thrift.TProtocol) {
 		p.process_GetStruct(seqid, iprot, oprot)
 	}
 
 	return p
 }
 
-func (p *SharedServiceProcessor) Process(iprot, oprot protocol.TProtocol) (bool, os.Error) {
+func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, os.Error) {
 	name, _, seqid := iprot.ReadMessageBegin()
 	if f := p.pMap[name]; f != nil {
 		f(seqid, iprot, oprot)
 		return true, nil
 	}
-	protocol.SkipType(iprot, protocol.TTYPE_STRUCT)
+	thrift.SkipType(iprot, thrift.TTYPE_STRUCT)
 	iprot.ReadMessageEnd()
 	err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))
 	return false, err
 }
 
-func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot protocol.TProtocol) {
+func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot thrift.TProtocol) {
 	args := New_getStruct_args()
 	args.Read(iprot)
 	iprot.ReadMessageEnd()
 	result := New_getStruct_result()
 	result.Success = p.handler.GetStruct(*args.Key)
-	oprot.WriteMessageBegin("getStruct", protocol.TMESSAGETYPE_REPLY, seqid)
+	oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_REPLY, seqid)
 	result.Write(oprot)
 	oprot.WriteMessageEnd()
 	oprot.GetTransport().Flush()
@@ -189,10 +188,10 @@ func New_getStruct_args() *getStruct_args {
 	return &getStruct_args{}
 }
 
-func (s *getStruct_args) Write(oprot protocol.TProtocol) {
+func (s *getStruct_args) Write(oprot thrift.TProtocol) {
 	oprot.WriteStructBegin("getStruct_args")
 	if s.Key != nil {
-		oprot.WriteFieldBegin("key", protocol.TTYPE_I32, 1)
+		oprot.WriteFieldBegin("key", thrift.TTYPE_I32, 1)
 		oprot.WriteI32(*s.Key)
 		oprot.WriteFieldEnd()
 	}
@@ -200,26 +199,26 @@ func (s *getStruct_args) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructEnd()
 }
 
-func (s *getStruct_args) Read(iprot protocol.TProtocol) {
+func (s *getStruct_args) Read(iprot thrift.TProtocol) {
 	iprot.ReadStructBegin()
 	defer iprot.ReadStructEnd()
 
 	for {
 		_, ftype, fid := iprot.ReadFieldBegin()
-		if ftype == protocol.TTYPE_STOP {
+		if ftype == thrift.TTYPE_STOP {
 			break
 		}
 
 		switch fid {
 		case 1: // key
-			if ftype == protocol.TTYPE_I32 {
+			if ftype == thrift.TTYPE_I32 {
 				v := iprot.ReadI32()
 				s.Key = &v
 			} else {
-				protocol.SkipType(iprot, ftype)
+				thrift.SkipType(iprot, ftype)
 			}
 		default: // unknown
-			protocol.SkipType(iprot, ftype)
+			thrift.SkipType(iprot, ftype)
 		}
 		iprot.ReadFieldEnd()
 	}
@@ -233,10 +232,10 @@ func New_getStruct_result() *getStruct_result {
 	return &getStruct_result{}
 }
 
-func (s *getStruct_result) Write(oprot protocol.TProtocol) {
+func (s *getStruct_result) Write(oprot thrift.TProtocol) {
 	oprot.WriteStructBegin("getStruct_result")
 	if s.Success != nil {
-		oprot.WriteFieldBegin("success", protocol.TTYPE_STRUCT, 0)
+		oprot.WriteFieldBegin("success", thrift.TTYPE_STRUCT, 0)
 		s.Success.Write(oprot)
 		oprot.WriteFieldEnd()
 	}
@@ -244,26 +243,26 @@ func (s *getStruct_result) Write(oprot protocol.TProtocol) {
 	oprot.WriteStructEnd()
 }
 
-func (s *getStruct_result) Read(iprot protocol.TProtocol) {
+func (s *getStruct_result) Read(iprot thrift.TProtocol) {
 	iprot.ReadStructBegin()
 	defer iprot.ReadStructEnd()
 
 	for {
 		_, ftype, fid := iprot.ReadFieldBegin()
-		if ftype == protocol.TTYPE_STOP {
+		if ftype == thrift.TTYPE_STOP {
 			break
 		}
 
 		switch fid {
 		case 0: // key
-			if ftype == protocol.TTYPE_STRUCT {
+			if ftype == thrift.TTYPE_STRUCT {
 				s.Success = NewSharedStruct()
 				s.Success.Read(iprot)
 			} else {
-				protocol.SkipType(iprot, ftype)
+				thrift.SkipType(iprot, ftype)
 			}
 		default: // unknown
-			protocol.SkipType(iprot, ftype)
+			thrift.SkipType(iprot, ftype)
 		}
 		iprot.ReadFieldEnd()
 	}
