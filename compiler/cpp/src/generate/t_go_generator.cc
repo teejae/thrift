@@ -262,16 +262,16 @@ void t_go_generator::init_generator() {
 string t_go_generator::render_includes() {
   const vector<t_program*>& includes = program_->get_includes();
 
-	string result = "";
+  string result = "";
   if (includes.size() == 0) {
-   	result += "\n";
+    result += "\n";
   } else {
-		result += "import (\n";
-	  for (size_t i = 0; i < includes.size(); ++i) {
-	    result +=  string("\"") + get_real_py_module(includes[i], gen_twisted_) + "\"\n";
-	  }
-		result += ")\n";
-	}
+    result += "import (\n";
+    for (size_t i = 0; i < includes.size(); ++i) {
+      result +=  string("\"") + get_real_py_module(includes[i], gen_twisted_) + "\"\n";
+    }
+    result += ")\n";
+  }
   return result;
 }
 
