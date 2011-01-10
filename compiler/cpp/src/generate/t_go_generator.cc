@@ -43,7 +43,14 @@ class t_go_generator : public t_generator {
     : t_generator(program)
   {
 		out_dir_base_ = "gen-go";
-    indent_str_ = "\t";
+    std::map<std::string, std::string>::const_iterator iter;
+
+    iter = parsed_options.find("spaces");
+    if (iter != parsed_options.end()) {
+      indent_str_ = "  ";
+    } else {
+      indent_str_ = "\t";
+    }
   }
 
   /**
@@ -2348,4 +2355,6 @@ string t_go_generator::type_to_spec_args(t_type* ttype) {
   throw "INVALID TYPE IN type_to_spec_args: " + ttype->get_name();
 }
 
-THRIFT_REGISTER_GENERATOR(go, "Go", "")
+THRIFT_REGISTER_GENERATOR(go, "Go",
+  "    spaces:       Use spaces instead of default tabs.\n" \
+)
