@@ -160,7 +160,7 @@ class t_go_generator : public t_generator {
    */
 
   std::string go_autogen_comment();
-  std::string py_imports();
+  std::string go_imports();
   std::string render_includes();
   std::string render_fastbinary_includes();
   std::string declare_argument(t_field* tfield);
@@ -244,14 +244,14 @@ void t_go_generator::init_generator() {
   // Print header
   f_types_ <<
     go_autogen_comment() << endl <<
-    py_imports() << endl <<
+    go_imports() << endl <<
     render_includes() << endl <<
     render_fastbinary_includes() <<
     endl << endl;
 
   f_consts_ <<
     go_autogen_comment() << endl <<
-    py_imports() << endl <<
+    go_imports() << endl <<
 		"const (" << endl;
 }
 
@@ -298,9 +298,9 @@ string t_go_generator::go_autogen_comment() {
 /**
  * Prints standard thrift imports
  */
-string t_go_generator::py_imports() {
+string t_go_generator::go_imports() {
   return
-    string("from thrift.Thrift import *");
+		string("import \"github.com/teejae/go-thrift/thrift\"");
 }
 
 /**
@@ -846,7 +846,7 @@ void t_go_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     go_autogen_comment() << endl <<
-    py_imports() << endl;
+    go_imports() << endl;
 
   if (tservice->get_extends() != NULL) {
     f_service_ <<
