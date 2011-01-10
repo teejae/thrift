@@ -668,7 +668,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
     "break" << endl;
   indent_down();
   indent(out) <<
-    "}" << endl;
+    "}" << endl << endl;
 
   // Switch statement on the field we are reading
   indent(out) <<
@@ -680,7 +680,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
     indent_up();
     indent(out) << "if ftype == " << type_to_enum((*f_iter)->get_type()) << " {" << endl;
     indent_up();
-    generate_deserialize_field(out, *f_iter, "self.");
+    generate_deserialize_field(out, *f_iter, "s.");
     indent_down();
     indent(out) << "} else {" << endl;
     indent_up();
@@ -697,7 +697,7 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
     indent() << "default:" << endl;
   indent_up();
   out <<
-    indent() << thrift.SkipType(iprot, ftype) << endl;
+    indent() << "thrift.SkipType(iprot, ftype)" << endl;
   indent_down();
 
   indent(out) << "}" << endl;
@@ -1694,7 +1694,7 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
       prefix + tfield->get_name();
   }
 
-  string name = prefix + tfield->get_name();
+  string name = prefix + capitalize(tfield->get_name());
 
   if (type->is_struct() || type->is_xception()) {
     generate_deserialize_struct(out,
@@ -1704,7 +1704,7 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
     generate_deserialize_container(out, type, name);
   } else if (type->is_base_type() || type->is_enum()) {
     indent(out) <<
-      name << " = iprot.";
+      "v := iprot.";
 
     if (type->is_base_type()) {
       t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
@@ -1714,38 +1714,39 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
           name;
         break;
       case t_base_type::TYPE_STRING:
+        // FIXME: figure out if Go needs this binary thing
         if (((t_base_type*)type)->is_binary() || !gen_utf8strings_) {
-          out << "readString();";
+          out << "ReadString()";
         } else {
-          out << "readString().decode('utf-8')";
+          throw "compiler error: FIXME for binary TYPE_STRING";
         }
         break;
       case t_base_type::TYPE_BOOL:
-        out << "readBool();";
+        out << "ReadBool()";
         break;
       case t_base_type::TYPE_BYTE:
-        out << "readByte();";
+        out << "ReadByte()";
         break;
       case t_base_type::TYPE_I16:
-        out << "readI16();";
+        out << "ReadI16()";
         break;
       case t_base_type::TYPE_I32:
-        out << "readI32();";
+        out << "ReadI32()";
         break;
       case t_base_type::TYPE_I64:
-        out << "readI64();";
+        out << "ReadI64()";
         break;
       case t_base_type::TYPE_DOUBLE:
-        out << "readDouble();";
+        out << "ReadDouble()";
         break;
       default:
-        throw "compiler error: no PHP name for base type " + t_base_type::t_base_name(tbase);
+        throw "compiler error: no Go name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
-      out << "readI32();";
+      out << "ReadI32()";
     }
     out << endl;
-
+    indent(out) << name << " = &v" << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
            tfield->get_name().c_str(), type->get_name().c_str());
