@@ -42,7 +42,7 @@ class t_go_generator : public t_generator {
       const std::string& option_string)
     : t_generator(program)
   {
-    out_dir_base_ = "gen-go";
+		out_dir_base_ = "gen-go";
   }
 
   /**
@@ -231,8 +231,9 @@ void t_go_generator::init_generator() {
   string package_name_ = program_->get_namespace("as3");
 
   string module = get_real_py_module(program_, gen_twisted_);
-  package_dir_ = get_out_dir();
-  MKDIR(package_dir_.c_str());
+  MKDIR(get_out_dir().c_str());
+  package_dir_ = get_out_dir() + "/" + program_->get_name();
+	MKDIR(package_dir_.c_str());
 
   // Make output file
   string f_types_name = package_dir_+"/"+"ttypes.go";
