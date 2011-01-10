@@ -172,7 +172,6 @@ class t_go_generator : public t_generator {
   std::string go_package();
   std::string go_imports();
   std::string render_includes();
-  std::string render_fastbinary_includes();
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -259,9 +258,7 @@ void t_go_generator::init_generator() {
     go_autogen_comment() << endl <<
     go_package() << endl <<
     go_imports() << endl <<
-    render_includes() << endl <<
-    render_fastbinary_includes() <<
-    endl << endl;
+    render_includes() << endl;
 
   f_consts_ <<
     go_autogen_comment() << endl <<
@@ -289,19 +286,6 @@ string t_go_generator::render_includes() {
     result += ")\n";
   }
   return result;
-}
-
-/**
- * Renders all the imports necessary to use the accelerated TBinaryProtocol
- */
-string t_go_generator::render_fastbinary_includes() {
-  return
-    "from thrift.transport import TTransport\n"
-    "from thrift.protocol import TBinaryProtocol, TProtocol\n"
-    "try:\n"
-    "  from thrift.protocol import fastbinary\n"
-    "except:\n"
-    "  fastbinary = None\n";
 }
 
 /**
@@ -819,8 +803,7 @@ void t_go_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     "from ttypes import *" << endl <<
-    "from thrift.Thrift import TProcessor" << endl <<
-    render_fastbinary_includes() << endl;
+    "from thrift.Thrift import TProcessor";
 
   if (gen_twisted_) {
     f_service_ <<
