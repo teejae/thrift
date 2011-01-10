@@ -723,55 +723,44 @@ void t_go_generator::generate_go_struct_writer(ofstream& out,
   vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
-    "def write(self, oprot):" << endl;
+    "func (s *" << capitalize(tstruct->get_name()) << ") Write(oprot thrift.TProtocol) {" << endl;
   indent_up();
 
   indent(out) <<
-    "if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated "
-    "and self.thrift_spec is not None "
-    "and fastbinary is not None:" << endl;
-  indent_up();
-
-  indent(out) <<
-    "oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))" << endl;
-  indent(out) <<
-    "return" << endl;
-  indent_down();
-
-  indent(out) <<
-    "oprot.writeStructBegin('" << name << "')" << endl;
+    "oprot.WriteStructBegin('" << name << "')" << endl;
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     // Write field header
     indent(out) <<
-      "if self." << (*f_iter)->get_name() << " != None:" << endl;
+      "if s." << capitalize((*f_iter)->get_name()) << " != nil {" << endl;
     indent_up();
     indent(out) <<
-      "oprot.writeFieldBegin(" <<
-      "'" << (*f_iter)->get_name() << "', " <<
+      "oprot.WriteFieldBegin(" <<
+      "\"" << (*f_iter)->get_name() << "\", " <<
       type_to_enum((*f_iter)->get_type()) << ", " <<
       (*f_iter)->get_key() << ")" << endl;
 
     // Write field contents
-    generate_serialize_field(out, *f_iter, "self.");
+    generate_serialize_field(out, *f_iter, "s.");
 
     // Write field closer
     indent(out) <<
-      "oprot.writeFieldEnd()" << endl;
+      "oprot.WriteFieldEnd()" << endl;
 
     indent_down();
+    indent(out) << "}" << endl;
   }
 
   // Write the struct map
   out <<
-    indent() << "oprot.writeFieldStop()" << endl <<
-    indent() << "oprot.writeStructEnd()" << endl;
+    indent() << "oprot.WriteFieldStop()" << endl <<
+    indent() << "oprot.WriteStructEnd()" << endl;
 
-  generate_go_struct_required_validator(out, tstruct);
+  // TODO: do we need validator?
+  // generate_go_struct_required_validator(out, tstruct);
 
   indent_down();
-  out <<
-    endl;
+  out << "}" << endl;
 }
 
 void t_go_generator::generate_go_struct_required_validator(ofstream& out,
@@ -1900,7 +1889,7 @@ void t_go_generator::generate_serialize_field(ofstream &out,
                                  prefix + tfield->get_name());
   } else if (type->is_base_type() || type->is_enum()) {
 
-    string name = prefix + tfield->get_name();
+    string name = "*" + prefix + capitalize(tfield->get_name());
 
     indent(out) <<
       "oprot.";
@@ -1914,34 +1903,34 @@ void t_go_generator::generate_serialize_field(ofstream &out,
         break;
       case t_base_type::TYPE_STRING:
         if (((t_base_type*)type)->is_binary() || !gen_utf8strings_) {
-          out << "writeString(" << name << ")";
+          out << "WriteString(" << name << ")";
         } else {
-          out << "writeString(" << name << ".encode('utf-8'))";
+          throw "compiler error: FIXME for binary TYPE_STRING";
         }
         break;
       case t_base_type::TYPE_BOOL:
-        out << "writeBool(" << name << ")";
+        out << "WriteBool(" << name << ")";
         break;
       case t_base_type::TYPE_BYTE:
-        out << "writeByte(" << name << ")";
+        out << "WriteByte(" << name << ")";
         break;
       case t_base_type::TYPE_I16:
-        out << "writeI16(" << name << ")";
+        out << "WriteI16(" << name << ")";
         break;
       case t_base_type::TYPE_I32:
-        out << "writeI32(" << name << ")";
+        out << "WriteI32(" << name << ")";
         break;
       case t_base_type::TYPE_I64:
-        out << "writeI64(" << name << ")";
+        out << "WriteI64(" << name << ")";
         break;
       case t_base_type::TYPE_DOUBLE:
-        out << "writeDouble(" << name << ")";
+        out << "WriteDouble(" << name << ")";
         break;
       default:
         throw "compiler error: no PHP name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
-      out << "writeI32(" << name << ")";
+      out << "WriteI32(" << name << ")";
     }
     out << endl;
   } else {
@@ -1962,7 +1951,7 @@ void t_go_generator::generate_serialize_struct(ofstream &out,
                                                t_struct* tstruct,
                                                string prefix) {
   indent(out) <<
-    prefix << ".write(oprot)" << endl;
+    prefix << ".Write(oprot)" << endl;
 }
 
 void t_go_generator::generate_serialize_container(ofstream &out,
