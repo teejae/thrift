@@ -176,7 +176,7 @@ class t_go_generator : public t_generator {
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
   std::string function_signature(t_function* tfunction, std::string prefix="");
-  std::string function_signature_if(t_function* tfunction, std::string prefix="");
+  std::string function_signature_if(t_function* tfunction);
   std::string argument_list(t_struct* tstruct);
   std::string type_to_enum(t_type* ttype);
   std::string type_to_spec_args(t_type* ttype);
@@ -870,6 +870,10 @@ void t_go_generator::generate_py_function_helpers(t_function* tfunction) {
 /**
  * Generates a service interface definition.
  *
+ type SharedService interface {
+ 	GetStruct(key int32) *SharedStruct
+ }
+ 
  * @param tservice The service to generate a header definition for
  */
 void t_go_generator::generate_service_interface(t_service* tservice) {
@@ -886,30 +890,23 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
     }
   }
 
-  f_service_ <<
-    "class Iface" << extends_if << ":" << endl;
-  indent_up();
+  // FIXME: deal with extends
   generate_python_docstring(f_service_, tservice);
+  f_service_ <<
+    "type " << tservice->get_name() << " interface {" << endl;
+  indent_up();
   vector<t_function*> functions = tservice->get_functions();
-  if (functions.empty()) {
+  vector<t_function*>::iterator f_iter;
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    generate_python_docstring(f_service_, (*f_iter));
     f_service_ <<
-      indent() << "pass" << endl;
-  } else {
-    vector<t_function*>::iterator f_iter;
-    for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-      f_service_ <<
-        indent() << "def " << function_signature_if(*f_iter) << ":" << endl;
-      indent_up();
-      generate_python_docstring(f_service_, (*f_iter));
-      f_service_ <<
-        indent() << "pass" << endl << endl;
-      indent_down();
-    }
+      indent() << function_signature_if(*f_iter) << endl;
+    indent_up();
+    indent_down();
   }
 
   indent_down();
-  f_service_ <<
-    endl;
+  f_service_ << "}" << endl;
 }
 
 /**
@@ -2161,14 +2158,10 @@ string t_go_generator::function_signature(t_function* tfunction,
  * @param tfunction Function definition
  * @return String of rendered function definition
  */
-string t_go_generator::function_signature_if(t_function* tfunction,
-                                           string prefix) {
-  // TODO(mcslee): Nitpicky, no ',' if argument_list is empty
-  string signature = prefix + tfunction->get_name() + "(";
-  if (!gen_twisted_) {
-    signature += "self, ";
-  }
+string t_go_generator::function_signature_if(t_function* tfunction) {
+  string signature = capitalize(tfunction->get_name()) + "(";
   signature += argument_list(tfunction->get_arglist()) + ")";
+  signature += " *" + type_name(tfunction->get_returntype());
   return signature;
 }
 
@@ -2188,7 +2181,7 @@ string t_go_generator::argument_list(t_struct* tstruct) {
     } else {
       result += ", ";
     }
-    result += (*f_iter)->get_name();
+    result += (*f_iter)->get_name() + " " + type_name((*f_iter)->get_type());
   }
   return result;
 }
