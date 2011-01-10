@@ -175,7 +175,7 @@ class t_go_generator : public t_generator {
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
-  std::string function_signature(t_function* tfunction, std::string prefix="");
+  std::string function_signature(t_function* tfunction);
   std::string function_signature_if(t_function* tfunction);
   std::string argument_list(t_struct* tstruct);
   std::string type_to_enum(t_type* ttype);
@@ -963,20 +963,13 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     string funname = (*f_iter)->get_name();
 
     // Open function
-    indent(f_service_) <<
-      "def " << function_signature(*f_iter) << ":" << endl;
-    indent_up();
     generate_python_docstring(f_service_, (*f_iter));
-    if (gen_twisted_) {
-      indent(f_service_) << "self._seqid += 1" << endl;
-      if (!(*f_iter)->is_oneway()) {
-        indent(f_service_) <<
-          "d = self._reqs[self._seqid] = defer.Deferred()" << endl;
-      }
-    }
+    indent(f_service_) << "func (s *" << client_name << ") " << function_signature(*f_iter) << "{" << endl;
+    indent_up();
+    indent(f_service_) << "s.seqid++" << endl;
 
     indent(f_service_) <<
-      "self.send_" << funname << "(";
+      "s.send_" << funname << "(";
 
     bool first = true;
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
@@ -991,65 +984,44 @@ void t_go_generator::generate_service_client(t_service* tservice) {
 
     if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
-      if (gen_twisted_) {
-        f_service_ << "return d" << endl;
-      } else {
-        if (!(*f_iter)->get_returntype()->is_void()) {
-          f_service_ << "return ";
-        }
-        f_service_ <<
-          "self.recv_" << funname << "()" << endl;
+      if (!(*f_iter)->get_returntype()->is_void()) {
+        f_service_ << "return ";
       }
+      f_service_ <<
+        "self.recv_" << funname << "()" << endl;
     } else {
-      if (gen_twisted_) {
-        f_service_ <<
-          indent() << "return defer.succeed(None)" << endl;
-      }
+      // nothing to do
     }
     indent_down();
-    f_service_ << endl;
+    f_service_ << "}" << endl;
 
     indent(f_service_) <<
-      "def send_" << function_signature(*f_iter) << ":" << endl;
+      "func (s *" << client_name << ") send_" << function_signature(*f_iter) << " {" << endl;
 
     indent_up();
 
     std::string argsname = (*f_iter)->get_name() + "_args";
 
     // Serialize the request header
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << "oprot = self._oprot_factory.getProtocol(self._transport)" << endl <<
-        indent() <<
-          "oprot.writeMessageBegin('" << (*f_iter)->get_name() << "', TMessageType.CALL, self._seqid)"
-        << endl;
-    } else {
-      f_service_ <<
-        indent() << "self._oprot.writeMessageBegin('" << (*f_iter)->get_name() << "', TMessageType.CALL, self._seqid)" << endl;
-    }
-
     f_service_ <<
-      indent() << "args = " << argsname << "()" << endl;
+      indent() << "s.oprot.WriteMessageBegin('" << (*f_iter)->get_name() << "', thrift.TMESSAGETYPE_CALL, s.seqid)" << endl;
+      
+    f_service_ <<
+      indent() << "args := new_" << argsname << "()" << endl;
 
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
       f_service_ <<
-        indent() << "args." << (*fld_iter)->get_name() << " = " << (*fld_iter)->get_name() << endl;
+        indent() << "args." << capitalize((*fld_iter)->get_name()) << " = &" << (*fld_iter)->get_name() << endl;
     }
 
     // Write to the stream
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << "args.write(oprot)" << endl <<
-        indent() << "oprot.writeMessageEnd()" << endl <<
-        indent() << "oprot.trans.flush()" << endl;
-    } else {
-      f_service_ <<
-        indent() << "args.write(self._oprot)" << endl <<
-        indent() << "self._oprot.writeMessageEnd()" << endl <<
-        indent() << "self._oprot.trans.flush()" << endl;
-    }
+    f_service_ <<
+      indent() << "args.Write(s.oprot)" << endl <<
+      indent() << "s.oprot.WriteMessageEnd()" << endl <<
+      indent() << "s.oprot.GetTransport().Flush()" << endl;
 
     indent_down();
+    f_service_ << "}" << endl;
 
     if (!(*f_iter)->is_oneway()) {
       std::string resultname = (*f_iter)->get_name() + "_result";
@@ -2119,12 +2091,10 @@ string t_go_generator::render_field_default_value(t_field* tfield) {
  * @param tfunction Function definition
  * @return String of rendered function definition
  */
-string t_go_generator::function_signature(t_function* tfunction,
-                                           string prefix) {
-  // TODO(mcslee): Nitpicky, no ',' if argument_list is empty
+string t_go_generator::function_signature(t_function* tfunction) {
   return
-    prefix + tfunction->get_name() +
-    "(self, " + argument_list(tfunction->get_arglist()) + ")";
+    capitalize(tfunction->get_name()) + "(" +
+     argument_list(tfunction->get_arglist()) + ")";
 }
 
 /**
