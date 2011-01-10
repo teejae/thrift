@@ -802,15 +802,7 @@ void t_go_generator::generate_service(t_service* tservice) {
   }
 
   f_service_ <<
-    "from ttypes import *" << endl <<
-    "from thrift.Thrift import TProcessor";
-
-  if (gen_twisted_) {
-    f_service_ <<
-      "from zope.interface import Interface, implements" << endl <<
-      "from twisted.internet import defer" << endl <<
-      "from thrift.transport import TTwisted" << endl;
-  }
+    "import \"fmt\"";
 
   f_service_ << endl;
 
