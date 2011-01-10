@@ -1760,8 +1760,8 @@ void t_go_generator::generate_deserialize_struct(ofstream &out,
                                                   t_struct* tstruct,
                                                   string prefix) {
   out <<
-    indent() << prefix << " = " << type_name(tstruct) << "()" << endl <<
-    indent() << prefix << ".read(iprot)" << endl;
+    indent() << prefix << " = New" << capitalize(type_name(tstruct)) << "()" << endl <<
+    indent() << prefix << ".Read(iprot)" << endl;
 }
 
 /**
