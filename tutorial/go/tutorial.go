@@ -76,7 +76,7 @@ var MAPCONSTANT = map[string]string{
  * You can define enums, which are just 32 bit integers. Values are optional
  * and start at 1 if not supplied, C style again.
  */
-type Operation int16
+type Operation int32
 
 const (
 	OPERATION_ADD      Operation = 1
