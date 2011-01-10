@@ -169,6 +169,7 @@ class t_go_generator : public t_generator {
    */
 
   std::string go_autogen_comment();
+  std::string go_package();
   std::string go_imports();
   std::string render_includes();
   std::string render_fastbinary_includes();
@@ -256,6 +257,7 @@ void t_go_generator::init_generator() {
   // Print header
   f_types_ <<
     go_autogen_comment() << endl <<
+    go_package() << endl <<
     go_imports() << endl <<
     render_includes() << endl <<
     render_fastbinary_includes() <<
@@ -263,6 +265,7 @@ void t_go_generator::init_generator() {
 
   f_consts_ <<
     go_autogen_comment() << endl <<
+    go_package() << endl <<
     go_imports() << endl <<
 		"const (" << endl;
 }
@@ -311,6 +314,13 @@ string t_go_generator::go_autogen_comment() {
     "//\n" +
     "// DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "//\n";
+}
+
+/**
+ * Prints standard thrift imports
+ */
+string t_go_generator::go_package() {
+  return string("package ") + program_->get_name() + "\n";
 }
 
 /**
@@ -798,6 +808,7 @@ void t_go_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     go_autogen_comment() << endl <<
+    go_package() << endl <<
     go_imports() << endl;
 
   if (tservice->get_extends() != NULL) {
@@ -1208,8 +1219,8 @@ void t_go_generator::generate_service_remote(t_service* tservice) {
   f_remote.open(f_remote_name.c_str());
 
   f_remote <<
-    "#!/usr/bin/env python" << endl <<
     go_autogen_comment() << endl <<
+    go_package() << endl <<
     "import sys" << endl <<
     "import pprint" << endl <<
     "from urlparse import urlparse" << endl <<
