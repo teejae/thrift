@@ -2294,6 +2294,12 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
+  if (ttype->is_struct()) {
+    return ttype->get_name();
+  }
+
+  if (ttype->is_container()) {
+  }
   return "FIXME:NO_TYPE";
 
   // // FIXME deal with non-base_types
