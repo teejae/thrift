@@ -39,6 +39,7 @@ class t_generator {
   t_generator(t_program* program) {
     tmp_ = 0;
     indent_ = 0;
+    indent_str_ = "  ";
     program_ = program;
     program_name_ = get_program_name(program);
     escape_['\n'] = "\\n";
@@ -160,7 +161,7 @@ class t_generator {
     std::string ind = "";
     int i;
     for (i = 0; i < indent_; ++i) {
-      ind += "  ";
+      ind += indent_str_;
     }
     return ind;
   }
@@ -267,6 +268,11 @@ class t_generator {
    * Map of characters to escape in string literals.
    */
   std::map<char, std::string> escape_;
+
+  /**
+   * Indentation string
+   */
+  std::string indent_str_;
 
  private:
   /**

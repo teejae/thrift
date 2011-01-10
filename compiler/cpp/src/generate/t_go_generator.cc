@@ -43,6 +43,7 @@ class t_go_generator : public t_generator {
     : t_generator(program)
   {
 		out_dir_base_ = "gen-go";
+    indent_str_ = "\t";
   }
 
   /**
@@ -69,11 +70,11 @@ class t_go_generator : public t_generator {
    * Struct generation code
    */
 
-  void generate_py_struct(t_struct* tstruct, bool is_exception);
-  void generate_py_struct_definition(std::ofstream& out, t_struct* tstruct, bool is_xception=false, bool is_result=false);
-  void generate_py_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_py_struct_writer(std::ofstream& out, t_struct* tstruct);
-  void generate_py_struct_required_validator(std::ofstream& out, t_struct* tstruct);
+  void generate_go_struct(t_struct* tstruct, bool is_exception);
+  void generate_go_struct_definition(std::ofstream& out, t_struct* tstruct, bool is_xception=false, bool is_result=false);
+  void generate_go_struct_reader(std::ofstream& out, t_struct* tstruct);
+  void generate_go_struct_writer(std::ofstream& out, t_struct* tstruct);
+  void generate_go_struct_required_validator(std::ofstream& out, t_struct* tstruct);
   void generate_py_function_helpers(t_function* tfunction);
 
   /**
@@ -267,9 +268,11 @@ string t_go_generator::render_includes() {
     result += "\n";
   } else {
     result += "import (\n";
+    indent_up();
     for (size_t i = 0; i < includes.size(); ++i) {
-      result +=  string("\"") + get_real_py_module(includes[i], gen_twisted_) + "\"\n";
+      result +=  indent() + string("\"") + get_real_py_module(includes[i], gen_twisted_) + "\"\n";
     }
+    indent_down();
     result += ")\n";
   }
   return result;
@@ -497,7 +500,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
  * Generates a python struct
  */
 void t_go_generator::generate_struct(t_struct* tstruct) {
-  generate_py_struct(tstruct, false);
+  generate_go_struct(tstruct, false);
 }
 
 /**
@@ -507,23 +510,28 @@ void t_go_generator::generate_struct(t_struct* tstruct) {
  * @param txception The struct definition
  */
 void t_go_generator::generate_xception(t_struct* txception) {
-  generate_py_struct(txception, true);
+  generate_go_struct(txception, true);
 }
 
 /**
- * Generates a python struct
+ * Generates a go struct
  */
-void t_go_generator::generate_py_struct(t_struct* tstruct,
+void t_go_generator::generate_go_struct(t_struct* tstruct,
                                         bool is_exception) {
-  generate_py_struct_definition(f_types_, tstruct, is_exception);
+  generate_go_struct_definition(f_types_, tstruct, is_exception);
 }
 
 /**
  * Generates a struct definition for a thrift data type.
+
+type SharedStruct struct {
+	Key   *int32
+	Value *string
+}
  *
  * @param tstruct The struct definition
  */
-void t_go_generator::generate_py_struct_definition(ofstream& out,
+void t_go_generator::generate_go_struct_definition(ofstream& out,
                                                    t_struct* tstruct,
                                                    bool is_exception,
                                                    bool is_result) {
@@ -533,14 +541,14 @@ void t_go_generator::generate_py_struct_definition(ofstream& out,
   vector<t_field*>::const_iterator m_iter;
 
   out << std::endl <<
-    "class " << tstruct->get_name();
-  if (is_exception) {
-    out << "(Exception)";
-  } else if (gen_newstyle_) {
-    out << "(object)";
-  }
-  out <<
-    ":" << endl;
+    "type " << tstruct->get_name() << " struct {" << endl;
+
+  // FIXME: deal with exceptions
+  // if (is_exception) {
+  //   out << "(Exception)";
+  // } else if (gen_newstyle_) {
+  //   out << "(object)";
+  // }
   indent_up();
   generate_python_docstring(out, tstruct);
 
@@ -629,11 +637,11 @@ void t_go_generator::generate_py_struct_definition(ofstream& out,
 
     indent_down();
 
-    out << endl;
+    out << "}" << endl;
   }
 
-  generate_py_struct_reader(out, tstruct);
-  generate_py_struct_writer(out, tstruct);
+  generate_go_struct_reader(out, tstruct);
+  generate_go_struct_writer(out, tstruct);
 
   // For exceptions only, generate a __str__ method. This is
   // because when raised exceptions are printed to the console, __repr__
@@ -676,7 +684,7 @@ void t_go_generator::generate_py_struct_definition(ofstream& out,
 /**
  * Generates the read method for a struct
  */
-void t_go_generator::generate_py_struct_reader(ofstream& out,
+void t_go_generator::generate_go_struct_reader(ofstream& out,
                                                 t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
@@ -761,7 +769,7 @@ void t_go_generator::generate_py_struct_reader(ofstream& out,
   out << endl;
 }
 
-void t_go_generator::generate_py_struct_writer(ofstream& out,
+void t_go_generator::generate_go_struct_writer(ofstream& out,
                                                t_struct* tstruct) {
   string name = tstruct->get_name();
   const vector<t_field*>& fields = tstruct->get_sorted_members();
@@ -812,14 +820,14 @@ void t_go_generator::generate_py_struct_writer(ofstream& out,
     indent() << "oprot.writeFieldStop()" << endl <<
     indent() << "oprot.writeStructEnd()" << endl;
 
-  generate_py_struct_required_validator(out, tstruct);
+  generate_go_struct_required_validator(out, tstruct);
 
   indent_down();
   out <<
     endl;
 }
 
-void t_go_generator::generate_py_struct_required_validator(ofstream& out,
+void t_go_generator::generate_go_struct_required_validator(ofstream& out,
                                                t_struct* tstruct) {
   indent(out) << "def validate(self):" << endl;
   indent_up();
@@ -901,7 +909,7 @@ void t_go_generator::generate_service_helpers(t_service* tservice) {
 
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     t_struct* ts = (*f_iter)->get_arglist();
-    generate_py_struct_definition(f_service_, ts, false);
+    generate_go_struct_definition(f_service_, ts, false);
     generate_py_function_helpers(*f_iter);
   }
 }
@@ -925,7 +933,7 @@ void t_go_generator::generate_py_function_helpers(t_function* tfunction) {
     for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
       result.append(*f_iter);
     }
-    generate_py_struct_definition(f_service_, &result, false, true);
+    generate_go_struct_definition(f_service_, &result, false, true);
   }
 }
 
@@ -2306,7 +2314,7 @@ string t_go_generator::type_to_enum(t_type* type) {
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
 }
 
-/** See the comment inside generate_py_struct_definition for what this is. */
+/** See the comment inside generate_go_struct_definition for what this is. */
 string t_go_generator::type_to_spec_args(t_type* ttype) {
   while (ttype->is_typedef()) {
     ttype = ((t_typedef*)ttype)->get_type();
