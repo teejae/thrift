@@ -397,10 +397,13 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
       break;
     case t_base_type::TYPE_BYTE:
 			out << "byte(" << value->get_integer() << ")";
+      break;
     case t_base_type::TYPE_I16:
 			out << "int16(" << value->get_integer() << ")";
+      break;
     case t_base_type::TYPE_I32:
 			out << "int32(" << value->get_integer() << ")";
+      break;
     case t_base_type::TYPE_I64:
 			out << "int64(" << value->get_integer() << ")";
       break;
