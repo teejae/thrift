@@ -2253,7 +2253,7 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
-  return "";
+  return "FIXME:NO_TYPE";
 
   // // FIXME deal with non-base_types
   // if (ttype->is_container ())
@@ -2327,7 +2327,7 @@ string t_go_generator::base_type_name(t_base_type* type) {
 
   switch (tbase) {
   case t_base_type::TYPE_VOID:
-    return "";
+    return "FIXME:void";
   case t_base_type::TYPE_STRING:
     return "string";
   case t_base_type::TYPE_BOOL:
