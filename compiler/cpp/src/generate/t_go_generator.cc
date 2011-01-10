@@ -606,6 +606,38 @@ void t_go_generator::generate_go_struct_constructor(ofstream& out,
 
 /**
  * Generates the read method for a struct
+ 
+ func (s *SharedStruct) Read(iprot thrift.TProtocol) {
+ 	iprot.ReadStructBegin()
+ 	for {
+ 		_, ftype, fid := iprot.ReadFieldBegin()
+ 		if ftype == thrift.TTYPE_STOP {
+ 			break
+ 		}
+
+ 		switch fid {
+ 		case 1: // key
+ 			if ftype == thrift.TTYPE_I32 {
+ 				v := iprot.ReadI32()
+ 				s.Key = &v
+ 			} else {
+ 				thrift.SkipType(iprot, ftype)
+ 			}
+ 		case 2: // value
+ 			if ftype == thrift.TTYPE_STRING {
+ 				v := iprot.ReadString()
+ 				s.Value = &v
+ 			} else {
+ 				thrift.SkipType(iprot, ftype)
+ 			}
+ 		default: // unknown
+ 			thrift.SkipType(iprot, ftype)
+ 		}
+ 		iprot.ReadFieldEnd()
+ 	}
+ 	iprot.ReadStructEnd()
+ }
+ 
  */
 void t_go_generator::generate_go_struct_reader(ofstream& out,
                                                 t_struct* tstruct) {
@@ -613,83 +645,75 @@ void t_go_generator::generate_go_struct_reader(ofstream& out,
   vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
-    "def read(self, iprot):" << endl;
+    "func (s *" << capitalize(tstruct->get_name()) << ") Read(iprot thrift.TProtocol) {" << endl;
   indent_up();
 
   indent(out) <<
-    "if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated "
-    "and isinstance(iprot.trans, TTransport.CReadableTransport) "
-    "and self.thrift_spec is not None "
-    "and fastbinary is not None:" << endl;
-  indent_up();
-
-  indent(out) <<
-    "fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))" << endl;
-  indent(out) <<
-    "return" << endl;
-  indent_down();
-
-  indent(out) <<
-    "iprot.readStructBegin()" << endl;
+    "iprot.ReadStructBegin()" << endl;
 
   // Loop over reading in fields
   indent(out) <<
-    "while True:" << endl;
-    indent_up();
+    "for {" << endl;
+  indent_up();
 
-    // Read beginning field marker
-    indent(out) <<
-      "(fname, ftype, fid) = iprot.readFieldBegin()" << endl;
+  // Read beginning field marker
+  indent(out) <<
+    "_, ftype, fid := iprot.ReadFieldBegin()" << endl;
 
-    // Check for field STOP marker and break
-    indent(out) <<
-      "if ftype == TType.STOP:" << endl;
+  // Check for field STOP marker and break
+  indent(out) <<
+    "if ftype == thrift.TTYPE_STOP {" << endl;
+  indent_up();
+  indent(out) <<
+    "break" << endl;
+  indent_down();
+  indent(out) <<
+    "}" << endl;
+
+  // Switch statement on the field we are reading
+  indent(out) <<
+    "switch fid {" << endl;
+
+  // Generate deserialization code for known cases
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    indent(out) << "case " << (*f_iter)->get_key() << ":" << endl;
     indent_up();
-    indent(out) <<
-      "break" << endl;
+    indent(out) << "if ftype == " << type_to_enum((*f_iter)->get_type()) << " {" << endl;
+    indent_up();
+    generate_deserialize_field(out, *f_iter, "self.");
     indent_down();
-
-    // Switch statement on the field we are reading
-    bool first = true;
-
-    // Generate deserialization code for known cases
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-        out <<
-          indent() << "if ";
-      } else {
-        out <<
-          indent() << "elif ";
-      }
-      out << "fid == " << (*f_iter)->get_key() << ":" << endl;
-      indent_up();
-      indent(out) << "if ftype == " << type_to_enum((*f_iter)->get_type()) << ":" << endl;
-      indent_up();
-      generate_deserialize_field(out, *f_iter, "self.");
-      indent_down();
-      out <<
-        indent() << "else:" << endl <<
-        indent() << "  iprot.skip(ftype)" << endl;
-      indent_down();
-    }
-
-    // In the default case we skip the field
+    indent(out) << "} else {" << endl;
+    indent_up();
     out <<
-      indent() <<  "else:" << endl <<
-      indent() <<  "  iprot.skip(ftype)" << endl;
-
-    // Read field end marker
-    indent(out) <<
-      "iprot.readFieldEnd()" << endl;
-
+      indent() << "thrift.SkipType(iprot, ftype)" << endl;
     indent_down();
-
-    indent(out) <<
-      "iprot.readStructEnd()" << endl;
-
+    out <<
+      indent() << "}" << endl;
     indent_down();
-  out << endl;
+  }
+
+  // In the default case we skip the field
+  out <<
+    indent() << "default:" << endl;
+  indent_up();
+  out <<
+    indent() << thrift.SkipType(iprot, ftype) << endl;
+  indent_down();
+
+  indent(out) << "}" << endl;
+
+  // Read field end marker
+  indent(out) <<
+    "iprot.ReadFieldEnd()" << endl;
+
+  indent_down();
+
+  indent(out) << "}" << endl;
+  indent(out) << "iprot.ReadStructEnd()" << endl;
+
+  indent_down();
+  
+  out << "}" << endl;
 }
 
 void t_go_generator::generate_go_struct_writer(ofstream& out,
@@ -2197,30 +2221,30 @@ string t_go_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "NO T_VOID CONSTRUCT";
     case t_base_type::TYPE_STRING:
-      return "TType.STRING";
+      return "thift.TTYPE_STRING";
     case t_base_type::TYPE_BOOL:
-      return "TType.BOOL";
+      return "thift.TTYPE_BOOL";
     case t_base_type::TYPE_BYTE:
-      return "TType.BYTE";
+      return "thift.TTYPE_BYTE";
     case t_base_type::TYPE_I16:
-      return "TType.I16";
+      return "thift.TTYPE_I16";
     case t_base_type::TYPE_I32:
-      return "TType.I32";
+      return "thift.TTYPE_I32";
     case t_base_type::TYPE_I64:
-      return "TType.I64";
+      return "thift.TTYPE_I64";
     case t_base_type::TYPE_DOUBLE:
-      return "TType.DOUBLE";
+      return "thift.TTYPE_DOUBLE";
     }
   } else if (type->is_enum()) {
-    return "TType.I32";
+    return "thift.TTYPE_I32";
   } else if (type->is_struct() || type->is_xception()) {
-    return "TType.STRUCT";
+    return "thift.TTYPE_STRUCT";
   } else if (type->is_map()) {
-    return "TType.MAP";
+    return "thift.TTYPE_MAP";
   } else if (type->is_set()) {
-    return "TType.SET";
+    return "thift.TTYPE_SET";
   } else if (type->is_list()) {
-    return "TType.LIST";
+    return "thift.TTYPE_LIST";
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
