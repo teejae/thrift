@@ -560,7 +560,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
 
   if (members.size() > 0) {
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      indent(out) << capitalize((*m_iter)->get_name()) + "\t*" + type_name((*m_iter)->get_type()) << endl;
+      indent(out) << capitalize((*m_iter)->get_name()) + " *" + type_name((*m_iter)->get_type()) << endl;
     }
   }
 
