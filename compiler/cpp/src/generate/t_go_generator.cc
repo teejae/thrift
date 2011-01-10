@@ -180,6 +180,8 @@ class t_go_generator : public t_generator {
   std::string type_to_enum(t_type* ttype);
   std::string type_to_spec_args(t_type* ttype);
 
+  std::string base_type_name(t_base_type*);
+
   static bool is_valid_namespace(const std::string& sub_namespace) {
     return sub_namespace == "twisted";
   }
@@ -329,11 +331,14 @@ void t_go_generator::close_generator() {
 }
 
 /**
- * Generates a typedef. This is not done in Python, types are all implicit.
+ * Generates a typedef.
  *
  * @param ttypedef The type definition
  */
-void t_go_generator::generate_typedef(t_typedef* ttypedef) {}
+void t_go_generator::generate_typedef(t_typedef* ttypedef) {
+  f_types_ <<
+    indent() << "type " << ttypedef->get_symbolic () << " " << type_name(ttypedef->get_type()) << endl;
+}
 
 /**
  * Generates code for an enumerated type. Done as a using a class to scope
@@ -2269,17 +2274,6 @@ string t_go_generator::argument_list(t_struct* tstruct) {
   return result;
 }
 
-string t_go_generator::type_name(t_type* ttype) {
-  t_program* program = ttype->get_program();
-  if (ttype->is_service()) {
-    return get_real_py_module(program, gen_twisted_) + "." + ttype->get_name();
-  }
-  if (program != NULL && program != program_) {
-    return get_real_py_module(program, gen_twisted_) + ".ttypes." + ttype->get_name();
-  }
-  return ttype->get_name();
-}
-
 /**
  * Converts the parse type to a Python tyoe
  */
@@ -2354,6 +2348,110 @@ string t_go_generator::type_to_spec_args(t_type* ttype) {
 
   throw "INVALID TYPE IN type_to_spec_args: " + ttype->get_name();
 }
+
+/**
+ * Maps a Thrift t_type to a C type.
+ */
+string t_go_generator::type_name(t_type* ttype)
+{
+  if (ttype->is_base_type()) {
+    return base_type_name((t_base_type *) ttype);
+  }
+
+  return "";
+
+  // // FIXME deal with non-base_types
+  // if (ttype->is_container ())
+  // {
+  //   string cname;
+  // 
+  //   t_container *tcontainer = (t_container *) ttype;
+  //   if (tcontainer->has_cpp_name ())
+  //   {
+  //     cname = tcontainer->get_cpp_name ();
+  //   } else if (ttype->is_map ()) {
+  //     cname = "GHashTable *";
+  //   } else if (ttype->is_set ()) {
+  //     // since a set requires unique elements, use a GHashTable, and
+  //     // populate the keys and values with the same data, using keys for
+  //     // the actual writes and reads.
+  //     // TODO: discuss whether or not to implement TSet, THashSet or GHashSet
+  //     cname = "GHashTable *";
+  //   } else if (ttype->is_list ()) {
+  //     // TODO: investigate other implementations besides GPtrArray
+  //     cname = "GPtrArray *";
+  //     t_type *etype = ((t_list *) ttype)->get_elem_type ();
+  //     if (etype->is_base_type ())
+  //     {
+  //       t_base_type::t_base tbase = ((t_base_type *) etype)->get_base ();
+  //       switch (tbase)
+  //       {
+  //         case t_base_type::TYPE_VOID:
+  //           throw "compiler error: cannot determine array type";
+  //         case t_base_type::TYPE_BOOL:
+  //         case t_base_type::TYPE_BYTE:
+  //         case t_base_type::TYPE_I16:
+  //         case t_base_type::TYPE_I32:
+  //         case t_base_type::TYPE_I64:
+  //         case t_base_type::TYPE_DOUBLE:
+  //           cname = "GArray *";
+  //           break;
+  //         case t_base_type::TYPE_STRING:
+  //           break;
+  //         default:
+  //           throw "compiler error: no array info for type";
+  //       }
+  //     }
+  //   }
+  // 
+  //   if (is_const)
+  //   {
+  //     return "const " + cname;
+  //   } else {
+  //     return cname;
+  //   }
+  // }
+
+  // // check for a namespace
+  // string pname = this->nspace + ttype->get_name ();
+
+  // if (is_complex_type (ttype))
+  // {
+  //   pname += " *";
+  // }
+}
+
+/**
+ * Returns the Go type that corresponds to the thrift type.
+ *
+ * @param tbase The base type
+ * @return Explicit Go type, i.e. "int32"
+ */
+string t_go_generator::base_type_name(t_base_type* type) {
+  t_base_type::t_base tbase = type->get_base();
+
+  switch (tbase) {
+  case t_base_type::TYPE_VOID:
+    return "";
+  case t_base_type::TYPE_STRING:
+    return "string";
+  case t_base_type::TYPE_BOOL:
+    return "bool";
+  case t_base_type::TYPE_BYTE:
+    return "int8";
+  case t_base_type::TYPE_I16:
+    return "int16";
+  case t_base_type::TYPE_I32:
+    return "int32";
+  case t_base_type::TYPE_I64:
+    return "int64";
+  case t_base_type::TYPE_DOUBLE:
+    return "float64";
+  default:
+    throw "compiler error: no Go base type name for base type " + t_base_type::t_base_name(tbase);
+  }
+}
+
 
 THRIFT_REGISTER_GENERATOR(go, "Go",
   "    spaces:       Use spaces instead of default tabs.\n" \
