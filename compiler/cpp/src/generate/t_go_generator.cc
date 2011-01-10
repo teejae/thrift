@@ -930,8 +930,10 @@ void t_go_generator::generate_service_client(t_service* tservice) {
   }
 
   generate_python_docstring(f_service_, tservice);
+  
+  string client_name = tservice->get_name() + "Client";
   f_service_ <<
-    "type " << tservice->get_name() << "Client struct {" << endl;
+    "type " << client_name << " struct {" << endl;
 
   indent_up();
   
@@ -944,40 +946,12 @@ void t_go_generator::generate_service_client(t_service* tservice) {
   indent(f_service_) << "}" <<  endl;
 
   // Constructor function
-  if (gen_twisted_) {
-    f_service_ <<
-      indent() << "def __init__(self, transport, oprot_factory):" << endl;
-  } else {
-    f_service_ <<
-      indent() << "def __init__(self, iprot, oprot=None):" << endl;
-  }
-  if (extends.empty()) {
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << "  self._transport = transport" << endl <<
-        indent() << "  self._oprot_factory = oprot_factory" << endl <<
-        indent() << "  self._seqid = 0" << endl <<
-        indent() << "  self._reqs = {}" << endl <<
-        endl;
-    } else {
-      f_service_ <<
-        indent() << "  self._iprot = self._oprot = iprot" << endl <<
-        indent() << "  if oprot != None:" << endl <<
-        indent() << "    self._oprot = oprot" << endl <<
-        indent() << "  self._seqid = 0" << endl <<
-        endl;
-    }
-  } else {
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << "  " << extends << ".Client.__init__(self, transport, oprot_factory)" << endl <<
-        endl;
-    } else {
-      f_service_ <<
-        indent() << "  " << extends << ".Client.__init__(self, iprot, oprot)" << endl <<
-        endl;
-    }
-  }
+  f_service_ << "func New" << client_name << "(iprot, oprot thrift.TProtocol) *" << client_name << " {" << endl;
+  indent_up();
+  indent(f_service_) << "return &" << client_name << "{iprot: iprot, oprot: oprot}" << endl;
+  indent_down();
+  f_service_ << "}" << endl;
+    
 
   // Generate client method implementations
   vector<t_function*> functions = tservice->get_functions();
