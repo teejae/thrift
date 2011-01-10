@@ -903,12 +903,19 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
 
 /**
  * Generates a service client definition.
+ type SharedServiceClient struct {
+ 	iprot thrift.TProtocol
+ 	oprot thrift.TProtocol
+ 	seqid int32
+ }
+ 
  *
  * @param tservice The service to generate a server for.
  */
 void t_go_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
+  // FIXME: deal with extends
   if (tservice->get_extends() != NULL) {
     extends = type_name(tservice->get_extends());
     if (gen_twisted_) {
@@ -922,16 +929,19 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     }
   }
 
-  if (gen_twisted_) {
-    f_service_ <<
-      "class Client" << extends_client << ":" << endl <<
-      "  implements(Iface)" << endl << endl;
-  } else {
-    f_service_ <<
-      "class Client(" << extends_client << "Iface):" << endl;
-  }
-  indent_up();
   generate_python_docstring(f_service_, tservice);
+  f_service_ <<
+    "type " << tservice->get_name() << "Client struct {" << endl;
+
+  indent_up();
+  
+  f_service_ <<
+    indent() << "iprot thrift.TProtocol" << endl <<
+    indent() << "oprot thrift.TProtocol" << endl <<
+    indent() << "seqid int32" << endl;
+  indent_down();
+
+  indent(f_service_) << "}" <<  endl;
 
   // Constructor function
   if (gen_twisted_) {
@@ -1172,7 +1182,6 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     }
   }
 
-  indent_down();
   f_service_ <<
     endl;
 }
