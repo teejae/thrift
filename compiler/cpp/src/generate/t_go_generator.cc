@@ -793,7 +793,7 @@ void t_go_generator::generate_go_struct_required_validator(ofstream& out,
  * @param tservice The service definition
  */
 void t_go_generator::generate_service(t_service* tservice) {
-  string f_service_name = package_dir_+"/"+service_name_+".py";
+  string f_service_name = package_dir_+ "/" + lowercase(service_name_) + ".go";
   f_service_.open(f_service_name.c_str());
 
   f_service_ <<
