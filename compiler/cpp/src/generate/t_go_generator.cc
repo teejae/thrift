@@ -79,6 +79,7 @@ class t_go_generator : public t_generator {
 
   void generate_go_struct(t_struct* tstruct, bool is_exception);
   void generate_go_struct_definition(std::ofstream& out, t_struct* tstruct, bool is_xception=false, bool is_result=false);
+  void generate_go_struct_constructor(std::ofstream& out, t_struct* tstruct);
   void generate_go_struct_reader(std::ofstream& out, t_struct* tstruct);
   void generate_go_struct_writer(std::ofstream& out, t_struct* tstruct);
   void generate_go_struct_required_validator(std::ofstream& out, t_struct* tstruct);
@@ -549,7 +550,6 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
                                                    bool is_result) {
 
   const vector<t_field*>& members = tstruct->get_members();
-  const vector<t_field*>& sorted_members = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator m_iter;
 
   out << std::endl;
@@ -570,9 +570,6 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
     }
   }
 
-  generate_go_struct_reader(out, tstruct);
-  generate_go_struct_writer(out, tstruct);
-
   // For exceptions only, generate a __str__ method. This is
   // because when raised exceptions are printed to the console, __repr__
   // isn't used. See python bug #5882
@@ -584,8 +581,27 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   }
 
   indent_down();
-  indent_down();
   out << "}" << endl;
+
+  generate_go_struct_constructor(out, tstruct);
+  generate_go_struct_reader(out, tstruct);
+  generate_go_struct_writer(out, tstruct);
+}
+
+/**
+ * Generates the constructor for a struct
+ * func NewSharedStruct() *SharedStruct {
+ * 	return &SharedStruct{}
+ * }
+ */
+void t_go_generator::generate_go_struct_constructor(ofstream& out,
+                                                    t_struct* tstruct) {
+  string name = capitalize(tstruct->get_name());
+  indent(out) << "func New" << name << "() *" << name << " {" << endl;
+  indent_up();
+  indent(out) << "return &" << name << "{}" << endl;
+  indent_down();
+  indent(out) << "}" << endl;
 }
 
 /**
