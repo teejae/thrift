@@ -552,8 +552,9 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   const vector<t_field*>& sorted_members = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator m_iter;
 
-  out << std::endl <<
-    "type " << tstruct->get_name() << " struct {" << endl;
+  out << std::endl;
+  generate_python_docstring(out, tstruct);
+  out << "type " << tstruct->get_name() << " struct {" << endl;
 
   // FIXME: deal with exceptions
   // if (is_exception) {
@@ -562,94 +563,15 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   //   out << "(object)";
   // }
   indent_up();
-  generate_python_docstring(out, tstruct);
-
-  out << endl;
-
-  /*
-     Here we generate the structure specification for the fastbinary codec.
-     These specifications have the following structure:
-     thrift_spec -> tuple of item_spec
-     item_spec -> None | (tag, type_enum, name, spec_args, default)
-     tag -> integer
-     type_enum -> TType.I32 | TType.STRING | TType.STRUCT | ...
-     name -> string_literal
-     default -> None  # Handled by __init__
-     spec_args -> None  # For simple types
-                | (type_enum, spec_args)  # Value type for list/set
-                | (type_enum, spec_args, type_enum, spec_args)
-                  # Key and value for map
-                | (class_name, spec_args_ptr) # For struct/exception
-     class_name -> identifier  # Basically a pointer to the class
-     spec_args_ptr -> expression  # just class_name.spec_args
-
-     TODO(dreiss): Consider making this work for structs with negative tags.
-  */
-
-  // TODO(dreiss): Look into generating an empty tuple instead of None
-  // for structures with no members.
-  // TODO(dreiss): Test encoding of structs where some inner structs
-  // don't have thrift_spec.
-  if (sorted_members.empty() || (sorted_members[0]->get_key() >= 0)) {
-    indent(out) << "thrift_spec = (" << endl;
-    indent_up();
-
-    int sorted_keys_pos = 0;
-    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
-
-      for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
-        indent(out) << "None, # " << sorted_keys_pos << endl;
-      }
-
-      indent(out) << "(" << (*m_iter)->get_key() << ", "
-            << type_to_enum((*m_iter)->get_type()) << ", "
-            << "'" << (*m_iter)->get_name() << "'" << ", "
-            << type_to_spec_args((*m_iter)->get_type()) << ", "
-            << render_field_default_value(*m_iter) << ", "
-            << "),"
-            << " # " << sorted_keys_pos
-            << endl;
-
-      sorted_keys_pos ++;
-    }
-
-    indent_down();
-    indent(out) << ")" << endl << endl;
-  } else {
-    indent(out) << "thrift_spec = None" << endl;
-  }
-
 
   if (members.size() > 0) {
-    out <<
-      indent() << "def __init__(self,";
-
-    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      // This fills in default values, as opposed to nulls
-      out << " " << declare_argument(*m_iter) << ",";
-    }
-
-    out << "):" << endl;
-
     indent_up();
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      // Initialize fields
-      t_type* type = (*m_iter)->get_type();
-      if (!type->is_base_type() && !type->is_enum() && (*m_iter)->get_value() != NULL) {
-        indent(out) <<
-          "if " << (*m_iter)->get_name() << " is " << "self.thrift_spec[" <<
-            (*m_iter)->get_key() << "][4]:" << endl;
-        indent(out) << "  " << (*m_iter)->get_name() << " = " <<
-          render_field_default_value(*m_iter) << endl;
-      }
-      indent(out) <<
-        "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
+      indent(out) << capitalize((*m_iter)->get_name()) + "\t*" + type_name((*m_iter)->get_type()) << endl;
     }
 
     indent_down();
-
-    out << "}" << endl;
   }
 
   generate_go_struct_reader(out, tstruct);
@@ -691,6 +613,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
     indent() << "return not (self == other)" << endl;
   indent_down();
   indent_down();
+  out << "}" << endl;
 }
 
 /**
@@ -2172,9 +2095,9 @@ void t_go_generator::generate_python_docstring(ofstream& out,
 
   if (has_doc) {
     generate_docstring_comment(out,
-      "\"\"\"\n",
-      "", ss.str(),
-      "\"\"\"\n");
+      "",
+      "// ", ss.str(),
+      "");
   }
 }
 
@@ -2185,9 +2108,9 @@ void t_go_generator::generate_python_docstring(ofstream& out,
                                                t_doc* tdoc) {
   if (tdoc->has_doc()) {
     generate_docstring_comment(out,
-      "\"\"\"\n",
-      "", tdoc->get_doc(),
-      "\"\"\"\n");
+      "",
+      "// ", tdoc->get_doc(),
+      "");
   }
 }
 
