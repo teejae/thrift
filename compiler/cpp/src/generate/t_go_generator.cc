@@ -565,13 +565,9 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   indent_up();
 
   if (members.size() > 0) {
-    indent_up();
-
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       indent(out) << capitalize((*m_iter)->get_name()) + "\t*" + type_name((*m_iter)->get_type()) << endl;
     }
-
-    indent_down();
   }
 
   generate_go_struct_reader(out, tstruct);
@@ -587,30 +583,6 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
       endl;
   }
 
-  // Printing utilities so that on the command line thrift
-  // structs look pretty like dictionaries
-  out <<
-    indent() << "def __repr__(self):" << endl <<
-    indent() << "  L = ['%s=%r' % (key, value)" << endl <<
-    indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
-    indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
-    endl;
-
-  // Equality and inequality methods that compare by value
-  out <<
-    indent() << "def __eq__(self, other):" << endl;
-  indent_up();
-  out <<
-    indent() << "return isinstance(other, self.__class__) and "
-                "self.__dict__ == other.__dict__" << endl;
-  indent_down();
-  out << endl;
-
-  out <<
-    indent() << "def __ne__(self, other):" << endl;
-  indent_up();
-  out <<
-    indent() << "return not (self == other)" << endl;
   indent_down();
   indent_down();
   out << "}" << endl;
