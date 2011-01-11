@@ -1827,7 +1827,7 @@ void t_go_generator::generate_serialize_field(ofstream &out,
         out << "WriteDouble(" << name << ")";
         break;
       default:
-        throw "compiler error: no PHP name for base type " + t_base_type::t_base_name(tbase);
+        throw "compiler error: no Go name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
       out << "WriteI32(" << name << ")";
@@ -2181,7 +2181,7 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
-  if (ttype->is_struct()) {
+  if (ttype->is_struct() || ttype->is_xception()) {
     return ttype->get_name();
   }
 
