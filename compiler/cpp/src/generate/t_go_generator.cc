@@ -548,7 +548,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
 
   out << std::endl;
   generate_python_docstring(out, tstruct);
-  out << "type " << tstruct->get_name() << " struct {" << endl;
+  out << "type " << capitalize(tstruct->get_name()) << " struct {" << endl;
 
   indent_up();
 
@@ -948,18 +948,18 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     t_struct* arg_struct = (*f_iter)->get_arglist();
     const vector<t_field*>& fields = arg_struct->get_members();
     vector<t_field*>::const_iterator fld_iter;
-    string funname = (*f_iter)->get_name();
+    string funname = capitalize((*f_iter)->get_name());
 
     // Open function
     generate_python_docstring(f_service_, (*f_iter));
     indent(f_service_) << "func (s *" << client_name << ") " <<
-      capitalize(function_signature(*f_iter)) << // hack to get public functions by capitalization
+      function_signature(*f_iter) <<
       " {" << endl;
     indent_up();
     indent(f_service_) << "s.seqid++" << endl;
 
     indent(f_service_) <<
-      "s.send_" << funname << "(";
+      "s.Send_" << funname << "(";
 
     bool first = true;
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
@@ -978,7 +978,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
         f_service_ << "return ";
       }
       f_service_ <<
-        "self.recv_" << funname << "()" << endl;
+        "self.Recv_" << funname << "()" << endl;
     } else {
       // nothing to do
     }
@@ -986,18 +986,18 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     f_service_ << "}" << endl;
 
     indent(f_service_) <<
-      "func (s *" << client_name << ") send_" << function_signature(*f_iter) << " {" << endl;
+      "func (s *" << client_name << ") Send_" << function_signature(*f_iter) << " {" << endl;
 
     indent_up();
 
-    std::string argsname = (*f_iter)->get_name() + "_args";
+    std::string argsname = capitalize((*f_iter)->get_name()) + "_args";
 
     // Serialize the request header
     f_service_ <<
       indent() << "s.oprot.WriteMessageBegin('" << (*f_iter)->get_name() << "', thrift.TMESSAGETYPE_CALL, s.seqid)" << endl;
       
     f_service_ <<
-      indent() << "args := new_" << argsname << "()" << endl;
+      indent() << "args := New" << argsname << "()" << endl;
 
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
       f_service_ <<
@@ -1015,13 +1015,13 @@ void t_go_generator::generate_service_client(t_service* tservice) {
 
     // receive function
     if (!(*f_iter)->is_oneway()) {
-      std::string resultname = (*f_iter)->get_name() + "_result";
+      std::string resultname = capitalize((*f_iter)->get_name()) + "_result";
       // Open function
       f_service_ <<
         endl;
       t_struct noargs(program_);
       t_function recv_function((*f_iter)->get_returntype(),
-                             string("recv_") + (*f_iter)->get_name(),
+                             string("Recv_") + capitalize((*f_iter)->get_name()),
                              &noargs);
       f_service_ <<
         indent() << "func (s *" << client_name << ") " << function_signature(&recv_function) << " {" << endl;
@@ -1046,7 +1046,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       
       f_service_ <<
         indent() << "}" << endl <<
-        indent() << "result := new_" << resultname << "()" << endl <<
+        indent() << "result := New" << resultname << "()" << endl <<
         indent() << "result.Read(s.iprot)" << endl;
       
       // Careful, only return _result if not a void function
@@ -1387,8 +1387,8 @@ void t_go_generator::generate_process_function(t_service* tservice,
     "(self, seqid, iprot, oprot):" << endl;
   indent_up();
 
-  string argsname = tfunction->get_name() + "_args";
-  string resultname = tfunction->get_name() + "_result";
+  string argsname = capitalize(tfunction->get_name()) + "_args";
+  string resultname = capitalize(tfunction->get_name()) + "_result";
 
   f_service_ <<
     indent() << "args = " << argsname << "()" << endl <<
@@ -1782,11 +1782,11 @@ void t_go_generator::generate_serialize_field(ofstream &out,
   if (type->is_struct() || type->is_xception()) {
     generate_serialize_struct(out,
                               (t_struct*)type,
-                              prefix + tfield->get_name());
+                              prefix + capitalize(tfield->get_name()));
   } else if (type->is_container()) {
     generate_serialize_container(out,
                                  type,
-                                 prefix + tfield->get_name());
+                                 prefix + capitalize(tfield->get_name()));
   } else if (type->is_base_type() || type->is_enum()) {
 
     string name = "*" + prefix + capitalize(tfield->get_name());
@@ -2054,7 +2054,7 @@ string t_go_generator::render_field_default_value(t_field* tfield) {
  * @return String of rendered function definition
  */
 string t_go_generator::function_signature(t_function* tfunction) {
-  string signature = tfunction->get_name() + "(" +
+  string signature = capitalize(tfunction->get_name()) + "(" +
     argument_list(tfunction->get_arglist()) + ") ";
   
   if (!tfunction->get_returntype()->is_void()) {
