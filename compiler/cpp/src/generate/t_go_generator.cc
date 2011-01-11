@@ -1503,7 +1503,8 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
     generate_deserialize_container(out, type, name);
   } else if (type->is_base_type() || type->is_enum()) {
     indent(out) <<
-      "v := iprot.";
+      "v := ";
+    string getter = "iprot.";
 
     if (type->is_base_type()) {
       t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
@@ -1515,36 +1516,37 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
       case t_base_type::TYPE_STRING:
         // FIXME: figure out if Go needs this binary thing
         if (((t_base_type*)type)->is_binary() || !gen_utf8strings_) {
-          out << "ReadString()";
+          getter += "ReadString()";
         } else {
           throw "compiler error: FIXME for binary TYPE_STRING";
         }
         break;
       case t_base_type::TYPE_BOOL:
-        out << "ReadBool()";
+        getter += "ReadBool()";
         break;
       case t_base_type::TYPE_BYTE:
-        out << "ReadByte()";
+        getter += "ReadByte()";
         break;
       case t_base_type::TYPE_I16:
-        out << "ReadI16()";
+        getter += "ReadI16()";
         break;
       case t_base_type::TYPE_I32:
-        out << "ReadI32()";
+        getter += "ReadI32()";
         break;
       case t_base_type::TYPE_I64:
-        out << "ReadI64()";
+        getter += "ReadI64()";
         break;
       case t_base_type::TYPE_DOUBLE:
-        out << "ReadDouble()";
+        getter += "ReadDouble()";
         break;
       default:
         throw "compiler error: no Go name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
-      out << "ReadI32()";
+      getter += "ReadI32()";
+      getter = type->get_name() + "(" + getter + ")";
     }
-    out << endl;
+    out << getter << endl;
     indent(out) << name << " = &v" << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
@@ -1740,7 +1742,7 @@ void t_go_generator::generate_serialize_field(ofstream &out,
         throw "compiler error: no Go name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
-      out << "WriteI32(" << name << ")";
+      out << "WriteI32(int32(" << name << "))";
     }
     out << endl;
   } else {
