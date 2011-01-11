@@ -470,21 +470,23 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     indent_down();
     indent(out) << "})";
   } else if (type->is_map()) {
-    t_type* ktype = ((t_map*)type)->get_key_type();
-    t_type* vtype = ((t_map*)type)->get_val_type();
-    out << "map[" << ktype->get_name() << "]" << vtype->get_name() << " {" << endl;
-    indent_up();
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
-    for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      out << indent();
-      out << render_const_value(ktype, v_iter->first);
-      out << " : ";
-      out << render_const_value(vtype, v_iter->second);
-      out << "," << endl;
-    }
-    indent_down();
-    indent(out) << "}";
+    // FIXME: deal with maps
+    out << "nil" << endl;
+    // t_type* ktype = ((t_map*)type)->get_key_type();
+    // t_type* vtype = ((t_map*)type)->get_val_type();
+    // out << "map[" << ktype->get_name() << "]" << vtype->get_name() << " {" << endl;
+    // indent_up();
+    // const map<t_const_value*, t_const_value*>& val = value->get_map();
+    // map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    // for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
+    //   out << indent();
+    //   out << render_const_value(ktype, v_iter->first);
+    //   out << " : ";
+    //   out << render_const_value(vtype, v_iter->second);
+    //   out << "," << endl;
+    // }
+    // indent_down();
+    // indent(out) << "}";
   } else if (type->is_list() || type->is_set()) {
     t_type* etype;
     if (type->is_list()) {
