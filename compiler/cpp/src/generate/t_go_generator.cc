@@ -804,9 +804,6 @@ void t_go_generator::generate_service(t_service* tservice) {
       "import \"" << tservice->get_extends()->get_program()->get_name() << "\"" << endl;
   }
 
-  f_service_ <<
-    "import \"fmt\"";
-
   f_service_ << endl;
 
   // Generate the three main parts of the service (well, two for now in PHP)
@@ -1351,7 +1348,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
     f_service_ <<
       indent() << "thrift.SkipType(iprot, thrift.TTYPE_STRUCT)" << endl <<
       indent() << "iprot.ReadMessageEnd()" << endl <<
-      indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf(\"Unknown function %s\", name))" << endl <<
+      indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, \"Unknown function \" + name)" << endl <<
   		indent() << "oprot.WriteMessageBegin(name, thrift.TMESSAGETYPE_EXCEPTION, seqid)" << endl <<
   		indent() << "err.Write(oprot)" << endl <<
   		indent() << "oprot.WriteMessageEnd()" << endl <<
@@ -1359,7 +1356,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
       indent() << "return false, err" << endl;    
   } else {
     f_service_ <<
-      indent() << "return parentProcessor.ProcessMessage(name, ttype, seqid)" << endl;
+      indent() << "return p.parentProcessor.ProcessMessage(name, ttype, seqid, iprot, oprot)" << endl;
   }
   indent_down();
     
