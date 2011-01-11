@@ -49,7 +49,7 @@ package tutorial
 
 import (
 	"os"
-	// "shared"
+	"shared"
 )
 
 /**
@@ -120,7 +120,7 @@ type InvalidOperation struct {
  */
 
 type Calculator interface {
-	SharedService //extends
+	shared.SharedService //extends
 
 	ping()
 	add(num1 int32, num2 int32) int32
@@ -134,3 +134,31 @@ type Calculator interface {
  * in folders with names gen-<language>. The generated code isn't too scary
  * to look at. It even has pretty indentation.
  */
+
+type CalculatorProcessor struct {
+	handler Calculator
+	parentProcessor *shared.SharedServiceProcessor
+}
+func NewCalculatorProcessor(handler Calculator) *CalculatorProcessor {
+	p := &CalculatorProcessor{handler: handler, parentProcessor: shared.NewSharedServiceProcessor(handler)}
+	return p
+}
+func (p *CalculatorProcessor) Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {
+	(name, ttype, seqid) = iprot.ReadMessageBegin()
+	return p.ProcessMessage(name, ttype, seqid, iprot, oprot)
+}
+func (p *CalculatorProcessor) ProcessMessage(name string, ttype thrift.TType, seqid int32, iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {
+	switch name {
+	case "ping":
+		p.process_Ping(seqid, iprot, oprot)
+	case "add":
+		p.process_Add(seqid, iprot, oprot)
+	case "calculate":
+		p.process_Calculate(seqid, iprot, oprot)
+	case "zip":
+		p.process_Zip(seqid, iprot, oprot)
+	default:
+		return parentProcessor.ProcessMessage(name, ttype, seqid)
+	}
+	return true, nil	
+}

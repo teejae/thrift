@@ -1260,12 +1260,13 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
 
-  // FIXME: deal with extends
   string extends = "";
+  string extends_package = "";
   string extends_processor = "";
   if (tservice->get_extends() != NULL) {
+    extends_package = tservice->get_extends()->get_program()->get_name();
     extends = type_name(tservice->get_extends());
-    extends_processor = extends + ".Processor, ";
+    extends_processor = extends + "Processor";
   }
 
   string service_name = tservice->get_name();
@@ -1276,6 +1277,9 @@ void t_go_generator::generate_service_server(t_service* tservice) {
 
   indent_up();
   indent(f_service_) << "handler " << service_name << endl;
+  if (!extends.empty()) {
+    indent(f_service_) << "parentProcessor *" << extends_package << "." << extends_processor << endl;
+  }
   indent_down();
   indent(f_service_) << "}" << endl;
 
@@ -1283,45 +1287,29 @@ void t_go_generator::generate_service_server(t_service* tservice) {
     "func New" << processor_name << "(handler " << service_name << ") *" << processor_name << " {" << endl;
   indent_up();
   f_service_ <<
-    indent() << "p := &" << processor_name << "{handler: handler}" << endl <<
+    indent() << "p := &" << processor_name << "{handler: handler";
+  if (!extends.empty()) {
+    f_service_ << ", parentProcessor: " << extends_package << ".New" << extends_processor << "(handler)";
+  }
+  f_service_ << "}" << endl <<
     indent() << "return p" << endl;
   indent_down();
   indent(f_service_) << "}" << endl;
   
-  // if (extends.empty()) {
-  //   if (gen_twisted_) {
-  //     f_service_ <<
-  //       indent() << "self._handler = Iface(handler)" << endl;
-  //   } else {
-  //     f_service_ <<
-  //       indent() << "self._handler = handler" << endl;
-  //   }
-  // 
-  //   f_service_ <<
-  //     indent() << "self._processMap = {}" << endl;
-  // } else {
-  //   if (gen_twisted_) {
-  //     f_service_ <<
-  //       indent() << extends << ".Processor.__init__(self, Iface(handler))" << endl;
-  //   } else {
-  //     f_service_ <<
-  //       indent() << extends << ".Processor.__init__(self, handler)" << endl;
-  //   }
-  // }
-  // for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-  //   f_service_ <<
-  //     indent() << "self._processMap[\"" << (*f_iter)->get_name() << "\"] = Processor.process_" << (*f_iter)->get_name() << endl;
-  // }
-  // indent_down();
-  // f_service_ << endl;
-
   // Generate the server implementation
   indent(f_service_) <<
     "func (p *" << processor_name << ") Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {" << endl;
   indent_up();
 
   f_service_ <<
-    indent() << "(name, _, seqid) = iprot.ReadMessageBegin()" << endl;
+    indent() << "(name, ttype, seqid) = iprot.ReadMessageBegin()" << endl <<
+    indent() << "return p.ProcessMessage(name, ttype, seqid, iprot, oprot)" << endl;
+  indent_down();
+  indent(f_service_) << "}" << endl;
+  
+  indent(f_service_) <<
+    "func (p *" << processor_name << ") ProcessMessage(name string, ttype thrift.TType, seqid int32, iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {" << endl;
+  indent_up();
 
   // Switch on all the available functions
   indent(f_service_) << "switch name {" << endl;
@@ -1339,15 +1327,21 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   f_service_ <<
     indent() << "default:" << endl;
   indent_up();
-  f_service_ <<
-    indent() << "thrift.SkipType(iprot, thrift.TTYPE_STRUCT)" << endl <<
-    indent() << "iprot.ReadMessageEnd()" << endl <<
-    indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf(\"Unknown function %s\", name))" << endl <<
-		indent() << "oprot.WriteMessageBegin(name, TMessageType.EXCEPTION, seqid)" << endl <<
-		indent() << "err.Write(oprot)" << endl <<
-		indent() << "oprot.WriteMessageEnd()" << endl <<
-		indent() << "oprot.GetTransport().Flush()" << endl <<
-    indent() << "return false, err" << endl;
+  
+  if (extends.empty()) {
+    f_service_ <<
+      indent() << "thrift.SkipType(iprot, thrift.TTYPE_STRUCT)" << endl <<
+      indent() << "iprot.ReadMessageEnd()" << endl <<
+      indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf(\"Unknown function %s\", name))" << endl <<
+  		indent() << "oprot.WriteMessageBegin(name, TMessageType.EXCEPTION, seqid)" << endl <<
+  		indent() << "err.Write(oprot)" << endl <<
+  		indent() << "oprot.WriteMessageEnd()" << endl <<
+  		indent() << "oprot.GetTransport().Flush()" << endl <<
+      indent() << "return false, err" << endl;    
+  } else {
+    f_service_ <<
+      indent() << "return parentProcessor.ProcessMessage(name, ttype, seqid)" << endl;
+  }
   indent_down();
     
   indent(f_service_) << "}" << endl;
