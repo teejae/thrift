@@ -100,7 +100,7 @@ func NewSharedServiceClient(iprot, oprot thrift.TProtocol) *SharedServiceClient 
 	return &SharedServiceClient{iprot: iprot, oprot: oprot}
 }
 
-func (s *SharedServiceClient) GetStruct(key int32) (*SharedStruct, *thrift.TException) {
+func (s *SharedServiceClient) GetStruct(key int32) (*SharedStruct, thrift.TException) {
 	s.send_getStruct(key)
 	return s.recv_getStruct()
 }
@@ -114,7 +114,7 @@ func (c *SharedServiceClient) send_getStruct(key int32) {
 	c.oprot.GetTransport().Flush()
 }
 
-func (c *SharedServiceClient) recv_getStruct() (*SharedStruct, *thrift.TException) {
+func (c *SharedServiceClient) recv_getStruct() (*SharedStruct, thrift.TException) {
 	_, mtype, _ := c.iprot.ReadMessageBegin()
 	defer c.iprot.ReadMessageEnd()
 
@@ -152,7 +152,7 @@ func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
 	return p
 }
 
-func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {
+func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, thrift.TException) {
 	name, _, seqid := iprot.ReadMessageBegin()
 	if f := p.pMap[name]; f != nil {
 		f(seqid, iprot, oprot)

@@ -5,38 +5,54 @@ import (
 )
 
 type TProcessor interface {
-	Process(iprot, oprot TProtocol) (bool, *TException)
+	Process(iprot, oprot TProtocol) (bool, TException)
 }
 
 type TExceptionType int
 
-type TException struct {
+type TException interface {
 	os.Error
-	Message    *string
-	Type       *TExceptionType
+	Message() *string
+	Type() *TExceptionType
+	Write(oprot TProtocol)
+	Read(iprot TProtocol)
+}
+
+type TExceptionImpl struct {
+	os.Error
+	message    *string
+	eType      *TExceptionType
 	structName string
 }
 
-func newTException(exceptionType TExceptionType, message string, structName string) *TException {
-	return &TException{Message: &message, Type: &exceptionType, structName: structName}
+func newTException(exceptionType TExceptionType, message string, structName string) TException {
+	return &TExceptionImpl{message: &message, eType: &exceptionType, structName: structName}
 }
 
-func (e *TException) Write(oprot TProtocol) {
+func (e *TExceptionImpl) Message() *string {
+	return e.message
+}
+
+func (e *TExceptionImpl) Type() *TExceptionType {
+	return e.eType
+}
+
+func (e *TExceptionImpl) Write(oprot TProtocol) {
 	oprot.WriteStructBegin(e.structName)
-	if e.Message != nil {
+	if e.message != nil {
 		oprot.WriteFieldBegin("message", TTYPE_STRING, 1)
-		oprot.WriteString(*e.Message)
+		oprot.WriteString(*e.message)
 		oprot.WriteFieldEnd()
 	}
 	oprot.WriteFieldBegin("type", TTYPE_I32, 2)
-	oprot.WriteI32(int32(*e.Type))
+	oprot.WriteI32(int32(*e.eType))
 	oprot.WriteFieldEnd()
 
 	oprot.WriteFieldStop()
 	oprot.WriteStructEnd()
 }
 
-func (e *TException) Read(iprot TProtocol) {
+func (e *TExceptionImpl) Read(iprot TProtocol) {
 	iprot.ReadStructBegin()
 	defer iprot.ReadStructEnd()
 
@@ -50,7 +66,7 @@ func (e *TException) Read(iprot TProtocol) {
 		case 1: // message
 			if ftype == TTYPE_STRING {
 				v := iprot.ReadString()
-				e.Message = &v
+				e.message = &v
 			} else {
 				SkipType(iprot, ftype)
 			}
@@ -58,7 +74,7 @@ func (e *TException) Read(iprot TProtocol) {
 			if ftype == TTYPE_I32 {
 				v := iprot.ReadI32()
 				t := TExceptionType(v)
-				e.Type = &t
+				e.eType = &t
 			} else {
 				SkipType(iprot, ftype)
 			}
@@ -82,7 +98,7 @@ const (
 	TAPPLICATION_EXCEPTION_PROTOCOL_ERROR       = 7
 )
 
-func NewTApplicationException(exceptionType TApplicationExceptionType, message string) *TException {
+func NewTApplicationException(exceptionType TApplicationExceptionType, message string) TException {
 	t := TExceptionType(exceptionType)
 	return newTException(t, message, "TApplicationException")
 }
@@ -97,7 +113,7 @@ const (
 	TTRANSPORT_EXCEPTION_TYPE_END_OF_FILE  = 4
 )
 
-func NewTTransportException(exceptionType TTransportExceptionType, message string) *TException {
+func NewTTransportException(exceptionType TTransportExceptionType, message string) TException {
 	t := TExceptionType(exceptionType)
 	return newTException(t, message, "TTransportException")
 }
