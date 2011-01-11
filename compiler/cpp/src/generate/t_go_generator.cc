@@ -709,7 +709,7 @@ void t_go_generator::generate_go_struct_writer(ofstream& out,
   indent_up();
 
   indent(out) <<
-    "oprot.WriteStructBegin('" << name << "')" << endl;
+    "oprot.WriteStructBegin(\"" << name << "\")" << endl;
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     // Write field header
@@ -814,7 +814,7 @@ void t_go_generator::generate_service_helpers(t_service* tservice) {
   vector<t_function*>::iterator f_iter;
 
   f_service_ <<
-    "# HELPER FUNCTIONS AND STRUCTURES" << endl;
+    "// HELPER FUNCTIONS AND STRUCTURES" << endl;
 
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     t_struct* ts = (*f_iter)->get_arglist();
@@ -970,7 +970,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
         f_service_ << "return ";
       }
       f_service_ <<
-        "self.Recv_" << funname << "()" << endl;
+        "s.Recv_" << funname << "()" << endl;
     } else {
       // nothing to do
     }
@@ -986,7 +986,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
 
     // Serialize the request header
     f_service_ <<
-      indent() << "s.oprot.WriteMessageBegin('" << (*f_iter)->get_name() << "', thrift.TMESSAGETYPE_CALL, s.seqid)" << endl;
+      indent() << "s.oprot.WriteMessageBegin(\"" << (*f_iter)->get_name() << "\", thrift.TMESSAGETYPE_CALL, s.seqid)" << endl;
       
     f_service_ <<
       indent() << "args := New" << argsname << "()" << endl;
@@ -1302,7 +1302,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   indent_up();
 
   f_service_ <<
-    indent() << "(name, ttype, seqid) = iprot.ReadMessageBegin()" << endl <<
+    indent() << "name, ttype, seqid = iprot.ReadMessageBegin()" << endl <<
     indent() << "return p.ProcessMessage(name, ttype, seqid, iprot, oprot)" << endl;
   indent_down();
   indent(f_service_) << "}" << endl;
