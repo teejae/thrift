@@ -133,35 +133,27 @@ func (c *SharedServiceClient) recv_getStruct() (*SharedStruct, *thrift.TExceptio
 	return nil, x
 }
 
-type processFunc func(seqid int32, iprot, oprot thrift.TProtocol)
-type processMap map[string]processFunc
-
 type SharedServiceProcessor struct {
 	handler SharedService
-	pMap    processMap
 }
 
 func NewSharedServiceProcessor(handler SharedService) *SharedServiceProcessor {
-	// map services
-	pMap := make(processMap)
-	p := &SharedServiceProcessor{handler: handler, pMap: pMap}
-	pMap["getStruct"] = func(seqid int32, iprot, oprot thrift.TProtocol) {
-		p.process_GetStruct(seqid, iprot, oprot)
-	}
-
+	p := &SharedServiceProcessor{handler: handler}
 	return p
 }
 
 func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {
 	name, _, seqid := iprot.ReadMessageBegin()
-	if f := p.pMap[name]; f != nil {
-		f(seqid, iprot, oprot)
-		return true, nil
+	switch name {
+	case "getStruct":
+		p.process_GetStruct(seqid, iprot, oprot)
+	default:
+		thrift.SkipType(iprot, thrift.TTYPE_STRUCT)
+		iprot.ReadMessageEnd()
+		err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))
+		return false, err		
 	}
-	thrift.SkipType(iprot, thrift.TTYPE_STRUCT)
-	iprot.ReadMessageEnd()
-	err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))
-	return false, err
+	return true, nil
 }
 
 func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot thrift.TProtocol) {
