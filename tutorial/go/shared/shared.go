@@ -87,7 +87,7 @@ func (s *SharedStruct) Write(oprot thrift.TProtocol) {
 
 
 type SharedService interface {
-	GetStruct(key int32) *SharedStruct
+	GetStruct(key int32) (*SharedStruct, *thrift.TException)
 }
 
 type SharedServiceClient struct {
@@ -169,7 +169,7 @@ func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot thr
 	args.Read(iprot)
 	iprot.ReadMessageEnd()
 	result := new_getStruct_result()
-	result.Success = p.handler.GetStruct(*args.Key)
+	result.Success, _ = p.handler.GetStruct(*args.Key)
 	oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_REPLY, seqid)
 	result.Write(oprot)
 	oprot.WriteMessageEnd()

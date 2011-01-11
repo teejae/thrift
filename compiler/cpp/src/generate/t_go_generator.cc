@@ -964,7 +964,9 @@ void t_go_generator::generate_service_client(t_service* tservice) {
 
     // Open function
     generate_python_docstring(f_service_, (*f_iter));
-    indent(f_service_) << "func (s *" << client_name << ") " << function_signature(*f_iter) << "{" << endl;
+    indent(f_service_) << "func (s *" << client_name << ") " <<
+      capitalize(function_signature(*f_iter)) << // hack to get public functions by capitalization
+      " {" << endl;
     indent_up();
     indent(f_service_) << "s.seqid++" << endl;
 
@@ -1023,108 +1025,80 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     indent_down();
     f_service_ << "}" << endl;
 
+    // receive function
     if (!(*f_iter)->is_oneway()) {
       std::string resultname = (*f_iter)->get_name() + "_result";
       // Open function
       f_service_ <<
         endl;
-      if (gen_twisted_) {
-        f_service_ <<
-          indent() << "def recv_" << (*f_iter)->get_name() <<
-              "(self, iprot, mtype, rseqid):" << endl;
-      } else {
-        t_struct noargs(program_);
-        t_function recv_function((*f_iter)->get_returntype(),
-                               string("recv_") + (*f_iter)->get_name(),
-                               &noargs);
-        f_service_ <<
-          indent() << "def " << function_signature(&recv_function) << ":" << endl;
-      }
+      t_struct noargs(program_);
+      t_function recv_function((*f_iter)->get_returntype(),
+                             string("recv_") + (*f_iter)->get_name(),
+                             &noargs);
+      f_service_ <<
+        indent() << "func (s *" << client_name << ") " << function_signature(&recv_function) << " {" << endl;
       indent_up();
 
       // TODO(mcslee): Validate message reply here, seq ids etc.
 
-      if (gen_twisted_) {
-        f_service_ <<
-          indent() << "d = self._reqs.pop(rseqid)" << endl;
-      } else {
-        f_service_ <<
-          indent() << "(fname, mtype, rseqid) = self._iprot.readMessageBegin()" << endl;
-      }
+      f_service_ <<
+        indent() << "_, mtype, _ := s.iprot.ReadMessageBegin()" << endl <<
+        indent() << "defer s.iprot.ReadMessageEnd()" << endl;
 
       f_service_ <<
-        indent() << "if mtype == TMessageType.EXCEPTION:" << endl <<
-        indent() << "  x = TApplicationException()" << endl;
+        indent() << "if mtype == thrift.TMESSAGE_EXCEPTION {" << endl;
 
-      if (gen_twisted_) {
-        f_service_ <<
-          indent() << "  x.read(iprot)" << endl <<
-          indent() << "  iprot.readMessageEnd()" << endl <<
-          indent() << "  return d.errback(x)" << endl <<
-          indent() << "result = " << resultname << "()" << endl <<
-          indent() << "result.read(iprot)" << endl <<
-          indent() << "iprot.readMessageEnd()" << endl;
-      } else {
-        f_service_ <<
-          indent() << "  x.read(self._iprot)" << endl <<
-          indent() << "  self._iprot.readMessageEnd()" << endl <<
-          indent() << "  raise x" << endl <<
-          indent() << "result = " << resultname << "()" << endl <<
-          indent() << "result.read(self._iprot)" << endl <<
-          indent() << "self._iprot.readMessageEnd()" << endl;
-      }
-
+      indent_up();
+      f_service_ <<
+        indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, \"\")" << endl <<
+        indent() << "x.Read(s.iprot)" << endl <<
+        indent() << "s.iprot.ReadMessageEnd()" << endl <<
+        indent() << "return nil, x" << endl;
+      indent_down();
+      
+      f_service_ <<
+        indent() << "}" << endl <<
+        indent() << "result := new_" << resultname << "()" << endl <<
+        indent() << "result.Read(s.iprot)" << endl;
+      
       // Careful, only return _result if not a void function
       if (!(*f_iter)->get_returntype()->is_void()) {
         f_service_ <<
-          indent() << "if result.success != None:" << endl;
-          if (gen_twisted_) {
-            f_service_ <<
-              indent() << "  return d.callback(result.success)" << endl;
-          } else {
-            f_service_ <<
-              indent() << "  return result.success" << endl;
-          }
+          indent() << "if result.Success != nil {" << endl;
+        indent_up();
+        indent(f_service_) << "return result.Success, nil" << endl;
+        indent_down();
+        indent(f_service_) << "}" << endl;
       }
 
+      // FIXME: deal with exceptions
       t_struct* xs = (*f_iter)->get_xceptions();
       const std::vector<t_field*>& xceptions = xs->get_members();
       vector<t_field*>::const_iterator x_iter;
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
+        string exception_name = capitalize((*x_iter)->get_name());
         f_service_ <<
-          indent() << "if result." << (*x_iter)->get_name() << " != None:" << endl;
-          if (gen_twisted_) {
-            f_service_ <<
-              indent() << "  return d.errback(result." << (*x_iter)->get_name() << ")" << endl;
-
-          } else {
-            f_service_ <<
-              indent() << "  raise result." << (*x_iter)->get_name() << "" << endl;
-          }
+          indent() << "if result." << exception_name << " != nil {" << endl;
+        indent_up();
+        indent(f_service_) << "return nil, result." << exception_name << endl;
+        indent_down();
+        indent(f_service_) << "}" << endl;
       }
 
       // Careful, only return _result if not a void function
       if ((*f_iter)->get_returntype()->is_void()) {
-        if (gen_twisted_) {
-          indent(f_service_) <<
-            "return d.callback(None)" << endl;
-        } else {
-          indent(f_service_) <<
-            "return" << endl;
-        }
+        indent(f_service_) <<
+          "return" << endl;
       } else {
-        if (gen_twisted_) {
-          f_service_ <<
-            indent() << "return d.errback(TApplicationException(TApplicationException.MISSING_RESULT, \"" << (*f_iter)->get_name() << " failed: unknown result\"))" << endl;
-        } else {
-          f_service_ <<
-            indent() << "raise TApplicationException(TApplicationException.MISSING_RESULT, \"" << (*f_iter)->get_name() << " failed: unknown result\");" << endl;
-        }
+        f_service_ <<
+          indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_MISSING_RESULT, \"" <<
+          (*f_iter)->get_name() << " failed: unknown result\")" << endl <<
+          indent() << "return nil, x" << endl;
       }
 
       // Close function
       indent_down();
-      f_service_ << endl;
+      f_service_ << "}" << endl;
     }
   }
 
@@ -2092,9 +2066,16 @@ string t_go_generator::render_field_default_value(t_field* tfield) {
  * @return String of rendered function definition
  */
 string t_go_generator::function_signature(t_function* tfunction) {
-  return
-    capitalize(tfunction->get_name()) + "(" +
-     argument_list(tfunction->get_arglist()) + ")";
+  string signature = tfunction->get_name() + "(" +
+    argument_list(tfunction->get_arglist()) + ") ";
+  
+  if (!tfunction->get_returntype()->is_void()) {
+    signature += "(*" + type_name(tfunction->get_returntype()) + ", *thrift.TException)";
+  } else {
+    signature += "*thrift.TException";
+  }
+  
+  return signature;
 }
 
 /**
@@ -2104,10 +2085,7 @@ string t_go_generator::function_signature(t_function* tfunction) {
  * @return String of rendered function definition
  */
 string t_go_generator::function_signature_if(t_function* tfunction) {
-  string signature = capitalize(tfunction->get_name()) + "(";
-  signature += argument_list(tfunction->get_arglist()) + ")";
-  signature += " *" + type_name(tfunction->get_returntype());
-  return signature;
+  return function_signature(tfunction);
 }
 
 

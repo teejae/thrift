@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"shared"
+	"github.com/teejae/go-thrift/thrift"
 	"github.com/teejae/go-thrift/thrift/protocol"
 	"github.com/teejae/go-thrift/thrift/server"
 	"github.com/teejae/go-thrift/thrift/transport"
@@ -63,7 +64,7 @@ func runServer() {
 
 type Server struct{}
 
-func (s *Server) GetStruct(key int32) *shared.SharedStruct {
+func (s *Server) GetStruct(key int32) (*shared.SharedStruct, *thrift.TException) {
 	msg := "you win!"
-	return &shared.SharedStruct{Key: &key, Value: &msg}
+	return &shared.SharedStruct{Key: &key, Value: &msg}, nil
 }
