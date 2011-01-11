@@ -981,14 +981,10 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     f_service_ << ")" << endl;
 
     if (!(*f_iter)->is_oneway()) {
-      f_service_ << indent();
-      if (!(*f_iter)->get_returntype()->is_void()) {
-        f_service_ << "return ";
-      }
-      f_service_ <<
-        "s.Recv_" << funname << "()" << endl;
+      f_service_ << indent() << "return s.Recv_" << funname << "()" << endl;
     } else {
       // nothing to do
+      f_service_ << indent() << "return nil" << endl;
     }
     indent_down();
     f_service_ << "}" << endl;
@@ -1047,8 +1043,15 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       indent_up();
       f_service_ <<
         indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, \"\")" << endl <<
-        indent() << "x.Read(s.iprot)" << endl <<
-        indent() << "return nil, x" << endl;
+        indent() << "x.Read(s.iprot)" << endl;
+      
+      if ((*f_iter)->get_returntype()->is_void()) {
+        f_service_ <<
+          indent() << "return x" << endl;
+      } else {
+        f_service_ <<
+          indent() << "return nil, x" << endl;        
+      }
       indent_down();
       
       f_service_ <<
@@ -1083,7 +1086,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       // Careful, only return _result if not a void function
       if ((*f_iter)->get_returntype()->is_void()) {
         indent(f_service_) <<
-          "return" << endl;
+          "return nil" << endl;
       } else {
         f_service_ <<
           indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_MISSING_RESULT, \"" <<
