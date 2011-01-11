@@ -225,6 +225,7 @@ class t_go_generator : public t_generator {
   std::ofstream f_types_;
   std::ofstream f_consts_;
   std::ofstream f_service_;
+  std::ofstream f_make_;
 
   std::string package_dir_;
 
@@ -252,6 +253,9 @@ void t_go_generator::init_generator() {
 
   string f_consts_name = package_dir_+"/"+"constants.go";
   f_consts_.open(f_consts_name.c_str());
+  
+  string f_make_name = package_dir_+"/"+"Makefile";
+  f_make_.open(f_make_name.c_str());
 
   // Print header
   f_types_ <<
@@ -264,6 +268,13 @@ void t_go_generator::init_generator() {
     go_autogen_comment() << endl <<
     go_package() << endl <<
 		"const (" << endl;
+	
+	f_make_ <<
+	  "include $(GOROOT)/src/Make.inc" << endl <<
+	  "TARG=" << program_->get_name() << endl <<
+	  "GOFILES=\\" << endl <<
+	  "  constants.go\\" << endl <<
+    "  ttypes.go\\" << endl;
 }
 
 /**
@@ -322,6 +333,9 @@ void t_go_generator::close_generator() {
   f_types_.close();
 	f_consts_ << ")" << endl;
   f_consts_.close();
+  f_make_ << endl <<
+    "include $(GOROOT)/src/Make.pkg" << endl;
+  f_make_.close();
 }
 
 /**
@@ -774,6 +788,9 @@ void t_go_generator::generate_go_struct_required_validator(ofstream& out,
  * @param tservice The service definition
  */
 void t_go_generator::generate_service(t_service* tservice) {
+  // add to Makefile
+  f_make_ << "  " << lowercase(service_name_) + ".go\\" << endl;
+  
   string f_service_name = package_dir_+ "/" + lowercase(service_name_) + ".go";
   f_service_.open(f_service_name.c_str());
 
