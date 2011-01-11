@@ -785,8 +785,7 @@ void t_go_generator::generate_service(t_service* tservice) {
 
   if (tservice->get_extends() != NULL) {
     f_service_ <<
-      "import " << get_real_py_module(tservice->get_extends()->get_program(), gen_twisted_) <<
-      "." << tservice->get_extends()->get_name() << endl;
+      "import \"" << tservice->get_extends()->get_program()->get_name() << "\"" << endl;
   }
 
   f_service_ <<
@@ -858,16 +857,8 @@ void t_go_generator::generate_py_function_helpers(t_function* tfunction) {
  */
 void t_go_generator::generate_service_interface(t_service* tservice) {
   string extends = "";
-  string extends_if = "";
   if (tservice->get_extends() != NULL) {
-    extends = type_name(tservice->get_extends());
-    extends_if = "(" + extends + ".Iface)";
-  } else {
-    if (gen_twisted_) {
-      extends_if = "(Interface)";
-    } else if (gen_newstyle_) {
-      extends_if = "(object)";
-    }
+    extends = tservice->get_extends()->get_program()->get_name() + "." + type_name(tservice->get_extends());
   }
 
   // FIXME: deal with extends
@@ -875,6 +866,7 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
   f_service_ <<
     "type " << tservice->get_name() << " interface {" << endl;
   indent_up();
+  indent(f_service_) << extends << endl;
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
@@ -2181,7 +2173,7 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
-  if (ttype->is_struct() || ttype->is_xception()) {
+  if (ttype->is_struct() || ttype->is_xception() || ttype->is_service()) {
     return ttype->get_name();
   }
 
