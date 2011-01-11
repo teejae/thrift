@@ -121,7 +121,6 @@ func (c *SharedServiceClient) recv_getStruct() (*SharedStruct, *thrift.TExceptio
 	if mtype == thrift.TMESSAGETYPE_EXCEPTION {
 		x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, "")
 		x.Read(c.iprot)
-		c.iprot.ReadMessageEnd()
 		return nil, x
 	}
 	result := new_getStruct_result()
@@ -151,7 +150,11 @@ func (p *SharedServiceProcessor) Process(iprot, oprot thrift.TProtocol) (bool, *
 		thrift.SkipType(iprot, thrift.TTYPE_STRUCT)
 		iprot.ReadMessageEnd()
 		err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf("Unknown function %s", name))
-		return false, err		
+		oprot.WriteMessageBegin(name, TMessageType.EXCEPTION, seqid)
+		err.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.GetTransport().Flush()
+		return false, err // FIXME: check that this is correct. we may not need this.
 	}
 	return true, nil
 }
@@ -161,7 +164,7 @@ func (p *SharedServiceProcessor) process_GetStruct(seqid int32, iprot, oprot thr
 	args.Read(iprot)
 	iprot.ReadMessageEnd()
 	result := new_getStruct_result()
-	result.Success, _ = p.handler.GetStruct(*args.Key)
+	result.Success, _ := p.handler.GetStruct(*args.Key)
 	oprot.WriteMessageBegin("getStruct", thrift.TMESSAGETYPE_REPLY, seqid)
 	result.Write(oprot)
 	oprot.WriteMessageEnd()

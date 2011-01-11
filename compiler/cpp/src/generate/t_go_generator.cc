@@ -1032,7 +1032,6 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       f_service_ <<
         indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, \"\")" << endl <<
         indent() << "x.Read(s.iprot)" << endl <<
-        indent() << "s.iprot.ReadMessageEnd()" << endl <<
         indent() << "return nil, x" << endl;
       indent_down();
       
@@ -1261,6 +1260,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
 
+  // FIXME: deal with extends
   string extends = "";
   string extends_processor = "";
   if (tservice->get_extends() != NULL) {
@@ -1268,101 +1268,102 @@ void t_go_generator::generate_service_server(t_service* tservice) {
     extends_processor = extends + ".Processor, ";
   }
 
+  string service_name = tservice->get_name();
+  string processor_name = service_name + "Processor";
   // Generate the header portion
-  if (gen_twisted_) {
-    f_service_ <<
-      "class Processor(" << extends_processor << "TProcessor):" << endl <<
-      "  implements(Iface)" << endl << endl;
-  } else {
-    f_service_ <<
-      "class Processor(" << extends_processor << "Iface, TProcessor):" << endl;
-  }
+  f_service_ <<
+    "type " << processor_name << " struct {" << endl;
 
   indent_up();
+  indent(f_service_) << "handler " << service_name << endl;
+  indent_down();
+  indent(f_service_) << "}" << endl;
 
   indent(f_service_) <<
-    "def __init__(self, handler):" << endl;
+    "func New" << processor_name << "(handler " << service_name << ") *" << processor_name << " {" << endl;
   indent_up();
-  if (extends.empty()) {
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << "self._handler = Iface(handler)" << endl;
-    } else {
-      f_service_ <<
-        indent() << "self._handler = handler" << endl;
-    }
-
-    f_service_ <<
-      indent() << "self._processMap = {}" << endl;
-  } else {
-    if (gen_twisted_) {
-      f_service_ <<
-        indent() << extends << ".Processor.__init__(self, Iface(handler))" << endl;
-    } else {
-      f_service_ <<
-        indent() << extends << ".Processor.__init__(self, handler)" << endl;
-    }
-  }
-  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    f_service_ <<
-      indent() << "self._processMap[\"" << (*f_iter)->get_name() << "\"] = Processor.process_" << (*f_iter)->get_name() << endl;
-  }
+  f_service_ <<
+    indent() << "p := &" << processor_name << "{handler: handler}" << endl <<
+    indent() << "return p" << endl;
   indent_down();
-  f_service_ << endl;
+  indent(f_service_) << "}" << endl;
+  
+  // if (extends.empty()) {
+  //   if (gen_twisted_) {
+  //     f_service_ <<
+  //       indent() << "self._handler = Iface(handler)" << endl;
+  //   } else {
+  //     f_service_ <<
+  //       indent() << "self._handler = handler" << endl;
+  //   }
+  // 
+  //   f_service_ <<
+  //     indent() << "self._processMap = {}" << endl;
+  // } else {
+  //   if (gen_twisted_) {
+  //     f_service_ <<
+  //       indent() << extends << ".Processor.__init__(self, Iface(handler))" << endl;
+  //   } else {
+  //     f_service_ <<
+  //       indent() << extends << ".Processor.__init__(self, handler)" << endl;
+  //   }
+  // }
+  // for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+  //   f_service_ <<
+  //     indent() << "self._processMap[\"" << (*f_iter)->get_name() << "\"] = Processor.process_" << (*f_iter)->get_name() << endl;
+  // }
+  // indent_down();
+  // f_service_ << endl;
 
   // Generate the server implementation
   indent(f_service_) <<
-    "def process(self, iprot, oprot):" << endl;
+    "func (p *" << processor_name << ") Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {" << endl;
   indent_up();
 
   f_service_ <<
-    indent() << "(name, type, seqid) = iprot.readMessageBegin()" << endl;
+    indent() << "(name, _, seqid) = iprot.ReadMessageBegin()" << endl;
 
-  // TODO(mcslee): validate message
-
-  // HOT: dictionary function lookup
-  f_service_ <<
-    indent() << "if name not in self._processMap:" << endl <<
-    indent() << "  iprot.skip(TType.STRUCT)" << endl <<
-    indent() << "  iprot.readMessageEnd()" << endl <<
-    indent() << "  x = TApplicationException(TApplicationException.UNKNOWN_METHOD, 'Unknown function %s' % (name))" << endl <<
-    indent() << "  oprot.writeMessageBegin(name, TMessageType.EXCEPTION, seqid)" << endl <<
-    indent() << "  x.write(oprot)" << endl <<
-    indent() << "  oprot.writeMessageEnd()" << endl <<
-    indent() << "  oprot.trans.flush()" << endl;
-
-  if (gen_twisted_) {
+  // Switch on all the available functions
+  indent(f_service_) << "switch name {" << endl;
+  
+  for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    string funname = (*f_iter)->get_name();
+    indent(f_service_) << "case \"" << funname << "\":" << endl;
+    indent_up();
     f_service_ <<
-      indent() << "  return defer.succeed(None)" << endl;
-  } else {
-    f_service_ <<
-      indent() << "  return" << endl;
+      indent() << "p.process_" << capitalize(funname) << "(seqid, iprot, oprot)" << endl;
+    indent_down();
   }
-
+  // default case for not finding a function
+  // FIXME: deal with extends
   f_service_ <<
-    indent() << "else:" << endl;
-
-  if (gen_twisted_) {
-    f_service_ <<
-      indent() << "  return self._processMap[name](self, seqid, iprot, oprot)" << endl;
-  } else {
-    f_service_ <<
-      indent() << "  self._processMap[name](self, seqid, iprot, oprot)" << endl;
-
-    // Read end of args field, the T_STOP, and the struct close
-    f_service_ <<
-      indent() << "return True" << endl;
-  }
+    indent() << "default:" << endl;
+  indent_up();
+  f_service_ <<
+    indent() << "thrift.SkipType(iprot, thrift.TTYPE_STRUCT)" << endl <<
+    indent() << "iprot.ReadMessageEnd()" << endl <<
+    indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf(\"Unknown function %s\", name))" << endl <<
+		indent() << "oprot.WriteMessageBegin(name, TMessageType.EXCEPTION, seqid)" << endl <<
+		indent() << "err.Write(oprot)" << endl <<
+		indent() << "oprot.WriteMessageEnd()" << endl <<
+		indent() << "oprot.GetTransport().Flush()" << endl <<
+    indent() << "return false, err" << endl;
+  indent_down();
+    
+  indent(f_service_) << "}" << endl;
+  
+  // Read end of args field, the T_STOP, and the struct close
+  f_service_ <<
+    indent() << "return true, nil" << endl;
 
   indent_down();
-  f_service_ << endl;
+  f_service_ << "}" << endl;
 
   // Generate the process subfunctions
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     generate_process_function(tservice, *f_iter);
   }
 
-  indent_down();
   f_service_ << endl;
 }
 
@@ -1373,19 +1374,22 @@ void t_go_generator::generate_service_server(t_service* tservice) {
  */
 void t_go_generator::generate_process_function(t_service* tservice,
                                                t_function* tfunction) {
+  string service_name = tservice->get_name();
+  string processor_name = service_name + "Processor";
+  
   // Open function
   indent(f_service_) <<
-    "def process_" << tfunction->get_name() <<
-    "(self, seqid, iprot, oprot):" << endl;
+    "func (p *" << processor_name << ") process_" << capitalize(tfunction->get_name()) <<
+    "(seqid int32, iprot, oprot thrift.TProtocol) {" << endl;
   indent_up();
 
   string argsname = capitalize(tfunction->get_name()) + "_args";
   string resultname = capitalize(tfunction->get_name()) + "_result";
 
   f_service_ <<
-    indent() << "args = " << argsname << "()" << endl <<
-    indent() << "args.read(iprot)" << endl <<
-    indent() << "iprot.readMessageEnd()" << endl;
+    indent() << "args := New" << argsname << "()" << endl <<
+    indent() << "args.Read(iprot)" << endl <<
+    indent() << "iprot.ReadMessageEnd()" << endl;
 
   t_struct* xs = tfunction->get_xceptions();
   const std::vector<t_field*>& xceptions = xs->get_members();
@@ -1394,171 +1398,75 @@ void t_go_generator::generate_process_function(t_service* tservice,
   // Declare result for non oneway function
   if (!tfunction->is_oneway()) {
     f_service_ <<
-      indent() << "result = " << resultname << "()" << endl;
+      indent() << "result := New" << resultname << "()" << endl;
   }
 
-  if (gen_twisted_) {
-    // Generate the function call
-    t_struct* arg_struct = tfunction->get_arglist();
-    const std::vector<t_field*>& fields = arg_struct->get_members();
-    vector<t_field*>::const_iterator f_iter;
+  // // FIXME: deal with exceptions
+  // // Try block for a function with exceptions
+  // if (xceptions.size() > 0) {
+  //   f_service_ <<
+  //     indent() << "try:" << endl;
+  //   indent_up();
+  // }
 
-    f_service_ <<
-      indent() << "d = defer.maybeDeferred(self._handler." <<
-        tfunction->get_name() << ", ";
-    bool first = true;
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-      } else {
-        f_service_ << ", ";
-      }
-      f_service_ << "args." << (*f_iter)->get_name();
-    }
-    f_service_ << ")" << endl;
+  // Generate the function call
+  t_struct* arg_struct = tfunction->get_arglist();
+  const std::vector<t_field*>& fields = arg_struct->get_members();
+  vector<t_field*>::const_iterator f_iter;
 
-    // Shortcut out here for oneway functions
-    if (tfunction->is_oneway()) {
-      f_service_ <<
-        indent() << "return d" << endl;
-      indent_down();
-      f_service_ << endl;
-      return;
-    }
-
-    f_service_ <<
-      indent() <<
-        "d.addCallback(self.write_results_success_" <<
-          tfunction->get_name() << ", result, seqid, oprot)" << endl;
-
-    if (xceptions.size() > 0) {
-      f_service_ <<
-        indent() <<
-          "d.addErrback(self.write_results_exception_" <<
-            tfunction->get_name() << ", result, seqid, oprot)" << endl;
-    }
-
-    f_service_ <<
-      indent() << "return d" << endl;
-
-    indent_down();
-    f_service_ << endl;
-
-    indent(f_service_) <<
-        "def write_results_success_" << tfunction->get_name() <<
-        "(self, success, result, seqid, oprot):" << endl;
-    indent_up();
-    f_service_ <<
-      indent() << "result.success = success" << endl <<
-      indent() << "oprot.writeMessageBegin(\"" << tfunction->get_name() <<
-        "\", TMessageType.REPLY, seqid)" << endl <<
-      indent() << "result.write(oprot)" << endl <<
-      indent() << "oprot.writeMessageEnd()" << endl <<
-      indent() << "oprot.trans.flush()" << endl;
-    indent_down();
-    f_service_ << endl;
-
-    // Try block for a function with exceptions
-    if (!tfunction->is_oneway() && xceptions.size() > 0) {
-      indent(f_service_) <<
-        "def write_results_exception_" << tfunction->get_name() <<
-        "(self, error, result, seqid, oprot):" << endl;
-      indent_up();
-      f_service_ <<
-        indent() << "try:" << endl;
-
-      // Kinda absurd
-      f_service_ <<
-        indent() << "  error.raiseException()" << endl;
-      for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-        f_service_ <<
-          indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
-        if (!tfunction->is_oneway()) {
-          indent_up();
-          f_service_ <<
-            indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
-          indent_down();
-        } else {
-          f_service_ <<
-            indent() << "pass" << endl;
-        }
-      }
-      f_service_ <<
-        indent() << "oprot.writeMessageBegin(\"" << tfunction->get_name() <<
-          "\", TMessageType.REPLY, seqid)" << endl <<
-        indent() << "result.write(oprot)" << endl <<
-        indent() << "oprot.writeMessageEnd()" << endl <<
-        indent() << "oprot.trans.flush()" << endl;
-      indent_down();
-      f_service_ << endl;
-    }
-  } else {
-
-    // Try block for a function with exceptions
-    if (xceptions.size() > 0) {
-      f_service_ <<
-        indent() << "try:" << endl;
-      indent_up();
-    }
-
-    // Generate the function call
-    t_struct* arg_struct = tfunction->get_arglist();
-    const std::vector<t_field*>& fields = arg_struct->get_members();
-    vector<t_field*>::const_iterator f_iter;
-
-    f_service_ << indent();
-    if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
-      f_service_ << "result.success = ";
-    }
-    f_service_ <<
-      "self._handler." << tfunction->get_name() << "(";
-    bool first = true;
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-      } else {
-        f_service_ << ", ";
-      }
-      f_service_ << "args." << (*f_iter)->get_name();
-    }
-    f_service_ << ")" << endl;
-
-    if (!tfunction->is_oneway() && xceptions.size() > 0) {
-      indent_down();
-      for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-        f_service_ <<
-          indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
-        if (!tfunction->is_oneway()) {
-          indent_up();
-          f_service_ <<
-            indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
-          indent_down();
-        } else {
-          f_service_ <<
-            indent() << "pass" << endl;
-        }
-      }
-    }
-
-    // Shortcut out here for oneway functions
-    if (tfunction->is_oneway()) {
-      f_service_ <<
-        indent() << "return" << endl;
-      indent_down();
-      f_service_ << endl;
-      return;
-    }
-
-    f_service_ <<
-      indent() << "oprot.writeMessageBegin(\"" << tfunction->get_name() << "\", TMessageType.REPLY, seqid)" << endl <<
-      indent() << "result.write(oprot)" << endl <<
-      indent() << "oprot.writeMessageEnd()" << endl <<
-      indent() << "oprot.trans.flush()" << endl;
-
-    // Close function
-    indent_down();
-    f_service_ << endl;
+  f_service_ << indent();
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
+    f_service_ << "result.Success, _ = ";
   }
+  f_service_ <<
+    "p.handler." << capitalize(tfunction->get_name()) << "(";
+  bool first = true;
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    if (first) {
+      first = false;
+    } else {
+      f_service_ << ", ";
+    }
+    f_service_ << "*args." << capitalize((*f_iter)->get_name());
+  }
+  f_service_ << ")" << endl;
+
+  // if (!tfunction->is_oneway() && xceptions.size() > 0) {
+  //   indent_down();
+  //   for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
+  //     f_service_ <<
+  //       indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
+  //     if (!tfunction->is_oneway()) {
+  //       indent_up();
+  //       f_service_ <<
+  //         indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
+  //       indent_down();
+  //     } else {
+  //       f_service_ <<
+  //         indent() << "pass" << endl;
+  //     }
+  //   }
+  // }
+
+  // FIXME: deal w/ oneway
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
+    f_service_ <<
+      indent() << "return" << endl;
+    indent_down();
+    f_service_ << "}" << endl;
+    return;
+  }
+
+  f_service_ <<
+    indent() << "oprot.WriteMessageBegin(\"" << tfunction->get_name() << "\", thrift.TMESSAGETYPE_REPLY, seqid)" << endl <<
+    indent() << "result.Write(oprot)" << endl <<
+    indent() << "oprot.WriteMessageEnd()" << endl <<
+    indent() << "oprot.GetTransport().Flush()" << endl;
+
+  // Close function
+  indent_down();
+  f_service_ << "}" << endl;
 }
 
 /**
