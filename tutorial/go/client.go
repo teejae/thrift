@@ -64,7 +64,7 @@ func runServer() {
 
 type Server struct{}
 
-func (s *Server) GetStruct(key int32) (*shared.SharedStruct, *thrift.TException) {
+func (s *Server) GetStruct(key int32) (*shared.SharedStruct, thrift.TException) {
 	msg := "you win!"
 	return &shared.SharedStruct{Key: &key, Value: &msg}, nil
 }

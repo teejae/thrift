@@ -566,7 +566,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   indent_up();
 
   if (is_exception) {
-    indent(out) << "*thrift.TException" << endl;
+    indent(out) << "thrift.TException" << endl;
   }
 
   if (members.size() > 0) {
@@ -1314,7 +1314,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   
   // Generate the server implementation
   indent(f_service_) <<
-    "func (p *" << processor_name << ") Process(iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {" << endl;
+    "func (p *" << processor_name << ") Process(iprot, oprot thrift.TProtocol) (bool, thrift.TException) {" << endl;
   indent_up();
 
   f_service_ <<
@@ -1324,7 +1324,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   indent(f_service_) << "}" << endl;
   
   indent(f_service_) <<
-    "func (p *" << processor_name << ") ProcessMessage(name string, ttype thrift.TType, seqid int32, iprot, oprot thrift.TProtocol) (bool, *thrift.TException) {" << endl;
+    "func (p *" << processor_name << ") ProcessMessage(name string, ttype thrift.TType, seqid int32, iprot, oprot thrift.TProtocol) (bool, thrift.TException) {" << endl;
   indent_up();
 
   // Switch on all the available functions
@@ -1970,9 +1970,9 @@ string t_go_generator::function_signature(t_function* tfunction) {
     argument_list(tfunction->get_arglist()) + ") ";
   
   if (!tfunction->get_returntype()->is_void()) {
-    signature += "(*" + type_name(tfunction->get_returntype()) + ", *thrift.TException)";
+    signature += "(*" + type_name(tfunction->get_returntype()) + ", thrift.TException)";
   } else {
-    signature += "*thrift.TException";
+    signature += "thrift.TException";
   }
   
   return signature;
