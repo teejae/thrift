@@ -263,7 +263,6 @@ void t_go_generator::init_generator() {
   f_consts_ <<
     go_autogen_comment() << endl <<
     go_package() << endl <<
-    go_imports() << endl <<
 		"const (" << endl;
 }
 
@@ -978,7 +977,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     f_service_ << "}" << endl;
 
     indent(f_service_) <<
-      "func (s *" << client_name << ") Send_" << function_signature(*f_iter) << " {" << endl;
+      "func (s *" << client_name << ") Send_" << capitalize((*f_iter)->get_name()) << "(" << argument_list((*f_iter)->get_arglist()) << ") {" << endl;
 
     indent_up();
 
@@ -1026,7 +1025,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
         indent() << "defer s.iprot.ReadMessageEnd()" << endl;
 
       f_service_ <<
-        indent() << "if mtype == thrift.TMESSAGE_EXCEPTION {" << endl;
+        indent() << "if mtype == thrift.TMESSAGETYPE_EXCEPTION {" << endl;
 
       indent_up();
       f_service_ <<
@@ -1302,7 +1301,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
   indent_up();
 
   f_service_ <<
-    indent() << "name, ttype, seqid = iprot.ReadMessageBegin()" << endl <<
+    indent() << "name, ttype, seqid := iprot.ReadMessageBegin()" << endl <<
     indent() << "return p.ProcessMessage(name, ttype, seqid, iprot, oprot)" << endl;
   indent_down();
   indent(f_service_) << "}" << endl;
@@ -1333,7 +1332,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
       indent() << "thrift.SkipType(iprot, thrift.TTYPE_STRUCT)" << endl <<
       indent() << "iprot.ReadMessageEnd()" << endl <<
       indent() << "err := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN_METHOD, fmt.Sprintf(\"Unknown function %s\", name))" << endl <<
-  		indent() << "oprot.WriteMessageBegin(name, TMessageType.EXCEPTION, seqid)" << endl <<
+  		indent() << "oprot.WriteMessageBegin(name, thrift.TMESSAGETYPE_EXCEPTION, seqid)" << endl <<
   		indent() << "err.Write(oprot)" << endl <<
   		indent() << "oprot.WriteMessageEnd()" << endl <<
   		indent() << "oprot.GetTransport().Flush()" << endl <<
@@ -2003,30 +2002,30 @@ string t_go_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "NO T_VOID CONSTRUCT";
     case t_base_type::TYPE_STRING:
-      return "thift.TTYPE_STRING";
+      return "thrift.TTYPE_STRING";
     case t_base_type::TYPE_BOOL:
-      return "thift.TTYPE_BOOL";
+      return "thrift.TTYPE_BOOL";
     case t_base_type::TYPE_BYTE:
-      return "thift.TTYPE_BYTE";
+      return "thrift.TTYPE_BYTE";
     case t_base_type::TYPE_I16:
-      return "thift.TTYPE_I16";
+      return "thrift.TTYPE_I16";
     case t_base_type::TYPE_I32:
-      return "thift.TTYPE_I32";
+      return "thrift.TTYPE_I32";
     case t_base_type::TYPE_I64:
-      return "thift.TTYPE_I64";
+      return "thrift.TTYPE_I64";
     case t_base_type::TYPE_DOUBLE:
-      return "thift.TTYPE_DOUBLE";
+      return "thrift.TTYPE_DOUBLE";
     }
   } else if (type->is_enum()) {
-    return "thift.TTYPE_I32";
+    return "thrift.TTYPE_I32";
   } else if (type->is_struct() || type->is_xception()) {
-    return "thift.TTYPE_STRUCT";
+    return "thrift.TTYPE_STRUCT";
   } else if (type->is_map()) {
-    return "thift.TTYPE_MAP";
+    return "thrift.TTYPE_MAP";
   } else if (type->is_set()) {
-    return "thift.TTYPE_SET";
+    return "thrift.TTYPE_SET";
   } else if (type->is_list()) {
-    return "thift.TTYPE_LIST";
+    return "thrift.TTYPE_LIST";
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
