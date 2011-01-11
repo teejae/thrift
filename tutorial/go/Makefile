@@ -4,6 +4,6 @@ TARG=client
 GOFILES=\
 	client.go\
 
-DEPS=shared
+DEPS=../gen-go/shared
 
 include $(GOROOT)/src/Make.cmd
