@@ -550,28 +550,16 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   generate_python_docstring(out, tstruct);
   out << "type " << tstruct->get_name() << " struct {" << endl;
 
-  // FIXME: deal with exceptions
-  // if (is_exception) {
-  //   out << "(Exception)";
-  // } else if (gen_newstyle_) {
-  //   out << "(object)";
-  // }
   indent_up();
+
+  if (is_exception) {
+    indent(out) << "*thrift.TException" << endl;
+  }
 
   if (members.size() > 0) {
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       indent(out) << capitalize((*m_iter)->get_name()) + " *" + type_name((*m_iter)->get_type()) << endl;
     }
-  }
-
-  // For exceptions only, generate a __str__ method. This is
-  // because when raised exceptions are printed to the console, __repr__
-  // isn't used. See python bug #5882
-  if (is_exception) {
-    out <<
-      indent() << "def __str__(self):" << endl <<
-      indent() << "  return repr(self)" << endl <<
-      endl;
   }
 
   indent_down();
