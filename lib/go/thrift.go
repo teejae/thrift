@@ -18,15 +18,15 @@ type TException interface {
 	Read(iprot TProtocol)
 }
 
+func newTException(exceptionType TExceptionType, message string, structName string) TException {
+	return &TExceptionImpl{message: &message, eType: &exceptionType, structName: structName}
+}
+
 type TExceptionImpl struct {
 	os.Error
 	message    *string
 	eType      *TExceptionType
 	structName string
-}
-
-func newTException(exceptionType TExceptionType, message string, structName string) TException {
-	return &TExceptionImpl{message: &message, eType: &exceptionType, structName: structName}
 }
 
 func (e *TExceptionImpl) Message() *string {
