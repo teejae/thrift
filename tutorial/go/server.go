@@ -20,7 +20,7 @@ func main() {
 }
 
 func runServer() {
-	processor := tutorial.NewCalculatorProcessor(&Server{})
+	processor := tutorial.NewCalculatorProcessor(&Server{log:make(map[int32]*shared.SharedStruct)})
 	trans := transport.NewTServerSocket(9090)
 
 	s := server.NewTSimpleServer(processor, trans)
@@ -77,7 +77,7 @@ func (s *Server) Calculate(logid int32, work tutorial.Work) (*int32, thrift.TExc
 		o := int32(*work.Op)
 		x.What = &o
 		m := "Can't find the operation"
-		x.Why = &m		
+		x.Why = &m
 	}
 	
 
