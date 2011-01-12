@@ -151,18 +151,18 @@ class t_go_generator : public t_generator {
                                           t_list*     tlist,
                                           std::string iter);
 
-  void generate_python_docstring         (std::ofstream& out,
+  void generate_go_docstring         (std::ofstream& out,
                                           t_struct* tstruct);
 
-  void generate_python_docstring         (std::ofstream& out,
+  void generate_go_docstring         (std::ofstream& out,
                                           t_function* tfunction);
 
-  void generate_python_docstring         (std::ofstream& out,
+  void generate_go_docstring         (std::ofstream& out,
                                           t_doc*    tdoc,
                                           t_struct* tstruct,
                                           const char* subheader);
 
-  void generate_python_docstring         (std::ofstream& out,
+  void generate_go_docstring         (std::ofstream& out,
                                           t_doc* tdoc);
 
   /**
@@ -563,7 +563,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   vector<t_field*>::const_iterator m_iter;
 
   out << std::endl;
-  generate_python_docstring(out, tstruct);
+  generate_go_docstring(out, tstruct);
   out << "type " << capitalize(tstruct->get_name()) << " struct {" << endl;
 
   indent_up();
@@ -878,7 +878,7 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
   }
 
   // FIXME: deal with extends
-  generate_python_docstring(f_service_, tservice);
+  generate_go_docstring(f_service_, tservice);
   f_service_ <<
     "type " << tservice->get_name() << " interface {" << endl;
   indent_up();
@@ -886,7 +886,7 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    generate_python_docstring(f_service_, (*f_iter));
+    generate_go_docstring(f_service_, (*f_iter));
     f_service_ <<
       indent() << function_signature_if(*f_iter) << endl;
     indent_up();
@@ -925,7 +925,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     }
   }
 
-  generate_python_docstring(f_service_, tservice);
+  generate_go_docstring(f_service_, tservice);
   
   string client_name = tservice->get_name() + "Client";
   f_service_ <<
@@ -959,7 +959,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
     string funname = capitalize((*f_iter)->get_name());
 
     // Open function
-    generate_python_docstring(f_service_, (*f_iter));
+    generate_go_docstring(f_service_, (*f_iter));
     indent(f_service_) << "func (s *" << client_name << ") " <<
       function_signature(*f_iter) <<
       " {" << endl;
@@ -1877,23 +1877,23 @@ void t_go_generator::generate_serialize_list_element(ofstream &out,
 /**
  * Generates the docstring for a given struct.
  */
-void t_go_generator::generate_python_docstring(ofstream& out,
+void t_go_generator::generate_go_docstring(ofstream& out,
                                                t_struct* tstruct) {
-  generate_python_docstring(out, tstruct, tstruct, "Attributes");
+  generate_go_docstring(out, tstruct, tstruct, "Attributes");
 }
 
 /**
  * Generates the docstring for a given function.
  */
-void t_go_generator::generate_python_docstring(ofstream& out,
+void t_go_generator::generate_go_docstring(ofstream& out,
                                                t_function* tfunction) {
-  generate_python_docstring(out, tfunction, tfunction->get_arglist(), "Parameters");
+  generate_go_docstring(out, tfunction, tfunction->get_arglist(), "Parameters");
 }
 
 /**
  * Generates the docstring for a struct or function.
  */
-void t_go_generator::generate_python_docstring(ofstream& out,
+void t_go_generator::generate_go_docstring(ofstream& out,
                                                t_doc*    tdoc,
                                                t_struct* tstruct,
                                                const char* subheader) {
@@ -1934,7 +1934,7 @@ void t_go_generator::generate_python_docstring(ofstream& out,
 /**
  * Generates the docstring for a generic object.
  */
-void t_go_generator::generate_python_docstring(ofstream& out,
+void t_go_generator::generate_go_docstring(ofstream& out,
                                                t_doc* tdoc) {
   if (tdoc->has_doc()) {
     generate_docstring_comment(out,
