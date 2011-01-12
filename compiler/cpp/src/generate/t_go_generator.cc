@@ -223,7 +223,6 @@ class t_go_generator : public t_generator {
    * File streams
    */
 
-  std::ofstream f_types_;
   std::ofstream f_service_;
   std::ofstream f_make_;
 
@@ -251,15 +250,12 @@ void t_go_generator::init_generator() {
   string f_service_name = package_dir_ + "/" + lowercase(program_->get_name()) + ".go";
   f_service_.open(f_service_name.c_str());
 
-  string f_types_name = package_dir_+"/"+"ttypes.go";
-  f_types_.open(f_types_name.c_str());
-
   string f_make_name = package_dir_+"/"+"Makefile";
   f_make_.open(f_make_name.c_str());
   
 
   // Print header
-  f_types_ <<
+  f_service_ <<
     go_autogen_comment() << endl <<
     go_package() << endl <<
     go_imports() << endl <<
@@ -269,7 +265,6 @@ void t_go_generator::init_generator() {
 	  "include $(GOROOT)/src/Make.inc" << endl <<
 	  "TARG=" << program_->get_name() << endl <<
 	  "GOFILES=\\" << endl <<
-    "  ttypes.go\\" << endl <<
     "  " << lowercase(program_->get_name()) + ".go\\" << endl;
 }
 
@@ -326,7 +321,7 @@ string t_go_generator::go_imports() {
  */
 void t_go_generator::close_generator() {
   // Close types file
-  f_types_.close();
+  f_service_.close();
   f_make_ << endl <<
     "include $(GOROOT)/src/Make.pkg" << endl;
   f_make_.close();
@@ -338,7 +333,7 @@ void t_go_generator::close_generator() {
  * @param ttypedef The type definition
  */
 void t_go_generator::generate_typedef(t_typedef* ttypedef) {
-  f_types_ <<
+  f_service_ <<
     indent() << "type " << ttypedef->get_symbolic () << " " << type_name(ttypedef->get_type()) << endl;
 }
 
@@ -367,7 +362,7 @@ enum Operation {
  * @param tenum The enumeration
  */
 void t_go_generator::generate_enum(t_enum* tenum) {
- 	f_types_ <<
+ 	f_service_ <<
 		"type " << tenum->get_name() <<
 		" int32" << endl <<
 		"const (" << endl;
@@ -380,11 +375,11 @@ void t_go_generator::generate_enum(t_enum* tenum) {
     int value = (*c_iter)->get_value();
 		// FIXME: make this to_upper_case, once figure out how to call it
 		string const_name = capitalize(tenum->get_name()) + "_" + (*c_iter)->get_name();
-    indent(f_types_) << const_name << " " << tenum->get_name() << " = " << value << endl;
+    indent(f_service_) << const_name << " " << tenum->get_name() << " = " << value << endl;
   }
  
   indent_down();
-	f_types_ << ")" << endl;
+	f_service_ << ")" << endl;
 }
 
 /**
@@ -395,8 +390,8 @@ void t_go_generator::generate_const(t_const* tconst) {
   string name = tconst->get_name();
   t_const_value* value = tconst->get_value();
 
-  indent(f_types_) << "var " << name << " = " << render_const_value(type, value);
-  f_types_ << endl;
+  indent(f_service_) << "var " << name << " = " << render_const_value(type, value);
+  f_service_ << endl;
 }
 
 /**
@@ -536,7 +531,7 @@ void t_go_generator::generate_xception(t_struct* txception) {
  */
 void t_go_generator::generate_go_struct(t_struct* tstruct,
                                         bool is_exception) {
-  generate_go_struct_definition(f_types_, tstruct, is_exception);
+  generate_go_struct_definition(f_service_, tstruct, is_exception);
 }
 
 /**
@@ -786,18 +781,6 @@ void t_go_generator::generate_go_struct_required_validator(ofstream& out,
  * @param tservice The service definition
  */
 void t_go_generator::generate_service(t_service* tservice) {
-  f_service_ <<
-    go_autogen_comment() << endl <<
-    go_package() << endl <<
-    go_imports() << endl;
-
-  if (tservice->get_extends() != NULL) {
-    f_service_ <<
-      "import \"" << tservice->get_extends()->get_program()->get_name() << "\"" << endl;
-  }
-
-  f_service_ << endl;
-
   // Generate the three main parts of the service (well, two for now in PHP)
   generate_service_interface(tservice);
   generate_service_client(tservice);
