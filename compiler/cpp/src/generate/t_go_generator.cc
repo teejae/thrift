@@ -103,7 +103,7 @@ class t_go_generator : public t_generator {
   void generate_deserialize_field        (std::ofstream &out,
                                           t_field*    tfield,
                                           std::string prefix="",
-                                          bool inclass=false);
+                                          bool newvar=false);
 
   void generate_deserialize_struct       (std::ofstream &out,
                                           t_struct*   tstruct,
@@ -127,7 +127,8 @@ class t_go_generator : public t_generator {
 
   void generate_serialize_field          (std::ofstream &out,
                                           t_field*    tfield,
-                                          std::string prefix="");
+                                          std::string prefix="",
+                                          bool forcecapitalize=true);
 
   void generate_serialize_struct         (std::ofstream &out,
                                           t_struct*   tstruct,
@@ -1487,7 +1488,7 @@ void t_go_generator::generate_process_function(t_service* tservice,
 void t_go_generator::generate_deserialize_field(ofstream &out,
                                                 t_field* tfield,
                                                 string prefix,
-                                                bool inclass) {
+                                                bool newvar) {
   t_type* type = get_true_type(tfield->get_type());
 
   if (type->is_void()) {
@@ -1550,7 +1551,13 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
       getter = type->get_name() + "(" + getter + ")";
     }
     out << getter << endl;
-    indent(out) << name << " = &" << v << endl;
+    indent(out) << name << " ";
+    if (newvar) {
+      out << ":=";
+    } else {
+      out << "=";
+    }
+    out << " &" << v << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
            tfield->get_name().c_str(), type->get_name().c_str());
@@ -1576,15 +1583,7 @@ void t_go_generator::generate_deserialize_container(ofstream &out,
                                                     t_type* ttype,
                                                     string prefix) {
   string size = tmp("_size");
-  string ktype = tmp("_ktype");
-  string vtype = tmp("_vtype");
-  string etype = tmp("_etype");
   string holder = tmp("_holder");
-
-  t_field fsize(g_type_i32, size);
-  t_field fktype(g_type_byte, ktype);
-  t_field fvtype(g_type_byte, vtype);
-  t_field fetype(g_type_byte, etype);
 
   // Declare variables, read header
   if (ttype->is_map()) {
@@ -1596,12 +1595,12 @@ void t_go_generator::generate_deserialize_container(ofstream &out,
   } else if (ttype->is_set()) {
     t_set* tset = (t_set*)ttype;
     out <<
-      indent() << "_, _, " << size << " := iprot.ReadSetBegin()" << endl <<
+      indent() << "_, " << size << " := iprot.ReadSetBegin()" << endl <<
       indent() << holder << " := make(map[*" << type_name(tset->get_elem_type()) << "]*bool, " << size << ")" << endl;
   } else if (ttype->is_list()) {
     t_list* tlist = (t_list*)ttype;
     out <<
-      indent() << "_, _, " << size << " := iprot.ReadListBegin()" << endl <<
+      indent() << "_, " << size << " := iprot.ReadListBegin()" << endl <<
       indent() << holder << " := make([]*" << type_name(tlist->get_elem_type()) << ", " << size << ")" << endl;
   }
 
@@ -1646,8 +1645,8 @@ void t_go_generator::generate_deserialize_map_element(ofstream &out,
   t_field fkey(tmap->get_key_type(), key);
   t_field fval(tmap->get_val_type(), val);
 
-  generate_deserialize_field(out, &fkey);
-  generate_deserialize_field(out, &fval);
+  generate_deserialize_field(out, &fkey, "", true);
+  generate_deserialize_field(out, &fval, "", true);
 
   indent(out) <<
     prefix << "[" << key << "] = " << val << endl;
@@ -1663,9 +1662,9 @@ void t_go_generator::generate_deserialize_set_element(ofstream &out,
   string b = tmp("_b");
   t_field felem(tset->get_elem_type(), elem);
 
-  generate_deserialize_field(out, &felem);
+  generate_deserialize_field(out, &felem, "", true);
 
-  indent(out) << b << " = true" << endl <<
+  indent(out) << b << " := true" << endl <<
     indent() << prefix << "[" << elem << "] = &" << b << endl;
 }
 
@@ -1678,7 +1677,7 @@ void t_go_generator::generate_deserialize_list_element(ofstream &out,
   string elem = tmp("_elem");
   t_field felem(tlist->get_elem_type(), elem);
 
-  generate_deserialize_field(out, &felem);
+  generate_deserialize_field(out, &felem, "", true);
 
   indent(out) <<
     prefix << " = append(" << prefix << ", " << elem << ")" << endl;
@@ -1693,7 +1692,8 @@ void t_go_generator::generate_deserialize_list_element(ofstream &out,
  */
 void t_go_generator::generate_serialize_field(ofstream &out,
                                                t_field* tfield,
-                                               string prefix) {
+                                               string prefix,
+                                               bool forcecapitalize) {
   t_type* type = get_true_type(tfield->get_type());
 
   // Do nothing for void types
@@ -1701,18 +1701,20 @@ void t_go_generator::generate_serialize_field(ofstream &out,
     throw "CANNOT GENERATE SERIALIZE CODE FOR void TYPE: " +
       prefix + tfield->get_name();
   }
+  
+  string varname = prefix + (forcecapitalize ? capitalize(tfield->get_name()) : tfield->get_name());
 
   if (type->is_struct() || type->is_xception()) {
     generate_serialize_struct(out,
                               (t_struct*)type,
-                              prefix + capitalize(tfield->get_name()));
+                              varname);
   } else if (type->is_container()) {
     generate_serialize_container(out,
                                  type,
-                                 prefix + capitalize(tfield->get_name()));
+                                 varname);
   } else if (type->is_base_type() || type->is_enum()) {
 
-    string name = "*" + prefix + capitalize(tfield->get_name());
+    string name = "*" + varname;
 
     indent(out) <<
       "oprot.";
@@ -1782,55 +1784,58 @@ void t_go_generator::generate_serialize_container(ofstream &out,
                                                   string prefix) {
   if (ttype->is_map()) {
     indent(out) <<
-      "oprot.writeMapBegin(" <<
+      "oprot.WriteMapBegin(" <<
       type_to_enum(((t_map*)ttype)->get_key_type()) << ", " <<
       type_to_enum(((t_map*)ttype)->get_val_type()) << ", " <<
-      "len(" << prefix << "))" << endl;
+      "int32(len(*" << prefix << ")))" << endl;
   } else if (ttype->is_set()) {
     indent(out) <<
-      "oprot.writeSetBegin(" <<
+      "oprot.WriteSetBegin(" <<
       type_to_enum(((t_set*)ttype)->get_elem_type()) << ", " <<
-      "len(" << prefix << "))" << endl;
+      "int32(len(*" << prefix << ")))" << endl;
   } else if (ttype->is_list()) {
     indent(out) <<
-      "oprot.writeListBegin(" <<
+      "oprot.WriteListBegin(" <<
       type_to_enum(((t_list*)ttype)->get_elem_type()) << ", " <<
-      "len(" << prefix << "))" << endl;
+      "int32(len(*" << prefix << ")))" << endl;
   }
 
   if (ttype->is_map()) {
     string kiter = tmp("kiter");
     string viter = tmp("viter");
     indent(out) <<
-      "for " << kiter << "," << viter << " in " << prefix << ".items():" << endl;
+      "for " << kiter << ", " << viter << " := range(*" << prefix << ") {" << endl;
     indent_up();
     generate_serialize_map_element(out, (t_map*)ttype, kiter, viter);
     indent_down();
+    indent(out) << "}" << endl;
   } else if (ttype->is_set()) {
-    string iter = tmp("iter");
+    string iter = tmp("kiter");
     indent(out) <<
-      "for " << iter << " in " << prefix << ":" << endl;
+      "for " << iter << " := range(*" << prefix << ") {" << endl;
     indent_up();
     generate_serialize_set_element(out, (t_set*)ttype, iter);
     indent_down();
+    indent(out) << "}" << endl;
   } else if (ttype->is_list()) {
     string iter = tmp("iter");
     indent(out) <<
-      "for " << iter << " in " << prefix << ":" << endl;
+      "for _, " << iter << " := range(*" << prefix << ") {" << endl;
     indent_up();
     generate_serialize_list_element(out, (t_list*)ttype, iter);
     indent_down();
+    indent(out) << "}" << endl;
   }
 
   if (ttype->is_map()) {
     indent(out) <<
-      "oprot.writeMapEnd()" << endl;
+      "oprot.WriteMapEnd()" << endl;
   } else if (ttype->is_set()) {
     indent(out) <<
-      "oprot.writeSetEnd()" << endl;
+      "oprot.WriteSetEnd()" << endl;
   } else if (ttype->is_list()) {
     indent(out) <<
-      "oprot.writeListEnd()" << endl;
+      "oprot.WriteListEnd()" << endl;
   }
 }
 
@@ -1843,10 +1848,10 @@ void t_go_generator::generate_serialize_map_element(ofstream &out,
                                                      string kiter,
                                                      string viter) {
   t_field kfield(tmap->get_key_type(), kiter);
-  generate_serialize_field(out, &kfield, "");
+  generate_serialize_field(out, &kfield, "", false);
 
   t_field vfield(tmap->get_val_type(), viter);
-  generate_serialize_field(out, &vfield, "");
+  generate_serialize_field(out, &vfield, "", false);
 }
 
 /**
@@ -1856,7 +1861,7 @@ void t_go_generator::generate_serialize_set_element(ofstream &out,
                                                      t_set* tset,
                                                      string iter) {
   t_field efield(tset->get_elem_type(), iter);
-  generate_serialize_field(out, &efield, "");
+  generate_serialize_field(out, &efield, "", false);
 }
 
 /**
@@ -1866,7 +1871,7 @@ void t_go_generator::generate_serialize_list_element(ofstream &out,
                                                       t_list* tlist,
                                                       string iter) {
   t_field efield(tlist->get_elem_type(), iter);
-  generate_serialize_field(out, &efield, "");
+  generate_serialize_field(out, &efield, "", false);
 }
 
 /**
