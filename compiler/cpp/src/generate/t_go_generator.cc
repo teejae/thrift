@@ -1621,6 +1621,7 @@ void t_go_generator::generate_deserialize_container(ofstream &out,
     }
 
     indent_down();
+  indent(out) << "}" << endl;
 
   // Read container end
   indent(out) << prefix << " = &" << holder << endl;
@@ -2108,6 +2109,18 @@ string t_go_generator::type_name(t_type* ttype)
   }
 
   if (ttype->is_container()) {
+    if (ttype->is_map()) {
+      t_map* tmap = (t_map*)ttype;
+      return string("map[*") + type_name(tmap->get_key_type()) + "]*" + type_name(tmap->get_val_type());
+    }
+    if (ttype->is_set()) {
+      t_set* tset = (t_set*)ttype;
+      return string("map[*") + type_name(tset->get_elem_type()) + "]*bool";
+    }
+    if (ttype->is_list()) {
+      t_list* tlist = (t_list*)ttype;
+      return string("[]*") + type_name(tlist->get_elem_type());
+    }
   }
   
   return "FIXME:NO_TYPE";
