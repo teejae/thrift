@@ -79,6 +79,8 @@ typedef i32 MyInteger
  */
 const i32 INT32CONSTANT = 9853
 const map<string,string> MAPCONSTANT = {'hello':'world', 'goodnight':'moon'}
+const set<string> SETCONSTANT = ['hey', 'you', 'beautiful']
+const list<string> LISTCONSTANT = ['hey', 'you', 'beautiful']
 
 struct DataStruct {
   1: map<string,string> query_params,

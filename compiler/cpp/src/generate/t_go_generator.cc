@@ -470,34 +470,39 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     indent_down();
     indent(out) << "})";
   } else if (type->is_map()) {
-    // FIXME: deal with maps
-    out << "nil" << endl;
-    // t_type* ktype = ((t_map*)type)->get_key_type();
-    // t_type* vtype = ((t_map*)type)->get_val_type();
-    // out << "map[" << ktype->get_name() << "]" << vtype->get_name() << " {" << endl;
-    // indent_up();
-    // const map<t_const_value*, t_const_value*>& val = value->get_map();
-    // map<t_const_value*, t_const_value*>::const_iterator v_iter;
-    // for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-    //   out << indent();
-    //   out << render_const_value(ktype, v_iter->first);
-    //   out << " : ";
-    //   out << render_const_value(vtype, v_iter->second);
-    //   out << "," << endl;
-    // }
-    // indent_down();
-    // indent(out) << "}";
-  } else if (type->is_list() || type->is_set()) {
+    t_type* ktype = ((t_map*)type)->get_key_type();
+    t_type* vtype = ((t_map*)type)->get_val_type();
+    out << "map[" << ktype->get_name() << "]" << vtype->get_name() << " {" << endl;
+    indent_up();
+    const map<t_const_value*, t_const_value*>& val = value->get_map();
+    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
+      out << indent();
+      out << render_const_value(ktype, v_iter->first);
+      out << " : ";
+      out << render_const_value(vtype, v_iter->second);
+      out << "," << endl;
+    }
+    indent_down();
+    indent(out) << "}";
+  } else if (type->is_set()) {
+    t_type* etype = ((t_set*)type)->get_elem_type();
+    out << "map[" << etype->get_name() << "]bool {" << endl;
+    indent_up();
+    const vector<t_const_value*>& val = value->get_list();
+    vector<t_const_value*>::const_iterator v_iter;
+    for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
+      out << indent();
+      out << render_const_value(etype, *v_iter);
+      out << " : true," << endl;
+    }
+    indent_down();
+    indent(out) << "}";
+  } else if (type->is_list()) {
+    // FIXME: deal with set
     t_type* etype;
-    if (type->is_list()) {
-      etype = ((t_list*)type)->get_elem_type();
-    } else {
-      etype = ((t_set*)type)->get_elem_type();
-    }
-    if (type->is_set()) {
-      out << "set(";
-    }
-    out << "[" << endl;
+    etype = ((t_list*)type)->get_elem_type();
+    out << "[]" << type_name(etype) << " {" << endl;
     indent_up();
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
@@ -507,10 +512,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
       out << "," << endl;
     }
     indent_down();
-    indent(out) << "]";
-    if (type->is_set()) {
-      out << ")";
-    }
+    indent(out) << "}";
   } else {
     throw "CANNOT GENERATE CONSTANT FOR TYPE: " + type->get_name();
   }
