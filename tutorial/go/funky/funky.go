@@ -9,9 +9,9 @@ import (
 //  - required_params
 //  - ordered_params
 type DataStruct struct {
-	Query_params *map[string]string
-	Required_params *map[string]bool
-	Ordered_params *[]string
+	Query_params *map[*string]*string
+	Required_params *map[*string]*bool
+	Ordered_params *[]*string
 }
 func NewDataStruct() *DataStruct {
 	return &DataStruct{}
@@ -28,11 +28,11 @@ func (s *DataStruct) Read(iprot thrift.TProtocol) {
 		case 1:
 			if ftype == thrift.TTYPE_MAP {
 				_, _, size := iprot.ReadMapBegin() 
-				m := make(map[string]string, size)
+				m := make(map[*string]*string, size)
 				for i := int32(0); i < size; i++ {
 					key := iprot.ReadString()
 					val := iprot.ReadString()
-					m[key] = val
+					m[&key] = &val
 				}
 				s.Query_params = &m
 				iprot.ReadMapEnd()
@@ -42,10 +42,11 @@ func (s *DataStruct) Read(iprot thrift.TProtocol) {
 		case 2:
 			if ftype == thrift.TTYPE_SET {
 				_, size := iprot.ReadSetBegin()
-				m := make(map[string]bool, size)
+				m := make(map[*string]*bool, size)
 				for i := int32(0); i < size; i++ {
 					e := iprot.ReadString()
-					m[e] = true
+					b := true
+					m[&e] = &b
 				}
 				s.Required_params = &m
 				iprot.ReadSetEnd()
@@ -55,10 +56,10 @@ func (s *DataStruct) Read(iprot thrift.TProtocol) {
 		case 3:
 			if ftype == thrift.TTYPE_LIST {
 				_, size := iprot.ReadListBegin()
-				l := make([]string, size)
+				l := make([]*string, size)
 				for i := int32(0); i < size; i++ {
 					e := iprot.ReadString()
-					l[i] = e
+					l = append(l, &e)
 				}
 				s.Ordered_params = &l
 				iprot.ReadListEnd()
@@ -78,8 +79,8 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 		oprot.WriteFieldBegin("query_params", thrift.TTYPE_MAP, 1)
 		oprot.WriteMapBegin(thrift.TTYPE_STRING, thrift.TTYPE_STRING, int32(len(*s.Query_params)))
 		for k, v := range(*s.Query_params) {
-			oprot.WriteString(k)
-			oprot.WriteString(v)			
+			oprot.WriteString(*k)
+			oprot.WriteString(*v)			
 		}
 		oprot.WriteMapEnd()
 		oprot.WriteFieldEnd()
@@ -88,7 +89,7 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 		oprot.WriteFieldBegin("required_params", thrift.TTYPE_SET, 2)
 		oprot.WriteSetBegin(thrift.TTYPE_STRING, int32(len(*s.Required_params)))
 		for k := range(*s.Required_params) {
-			oprot.WriteString(k)			
+			oprot.WriteString(*k)			
 		}
 		oprot.WriteSetEnd()
 		oprot.WriteFieldEnd()
@@ -97,7 +98,7 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 		oprot.WriteFieldBegin("ordered_params", thrift.TTYPE_LIST, 3)
 		oprot.WriteListBegin(thrift.TTYPE_STRING, int32(len(*s.Ordered_params)))
 		for _, v := range(*s.Ordered_params) {
-			oprot.WriteString(v)			
+			oprot.WriteString(*v)			
 		}
 		oprot.WriteListEnd()
 		oprot.WriteFieldEnd()
