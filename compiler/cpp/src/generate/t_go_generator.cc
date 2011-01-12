@@ -248,11 +248,15 @@ void t_go_generator::init_generator() {
 	MKDIR(package_dir_.c_str());
 
   // Make output file
+  string f_service_name = package_dir_ + "/" + lowercase(program_->get_name()) + ".go";
+  f_service_.open(f_service_name.c_str());
+
   string f_types_name = package_dir_+"/"+"ttypes.go";
   f_types_.open(f_types_name.c_str());
 
   string f_make_name = package_dir_+"/"+"Makefile";
   f_make_.open(f_make_name.c_str());
+  
 
   // Print header
   f_types_ <<
@@ -265,7 +269,8 @@ void t_go_generator::init_generator() {
 	  "include $(GOROOT)/src/Make.inc" << endl <<
 	  "TARG=" << program_->get_name() << endl <<
 	  "GOFILES=\\" << endl <<
-    "  ttypes.go\\" << endl;
+    "  ttypes.go\\" << endl <<
+    "  " << lowercase(program_->get_name()) + ".go\\" << endl;
 }
 
 /**
@@ -781,12 +786,6 @@ void t_go_generator::generate_go_struct_required_validator(ofstream& out,
  * @param tservice The service definition
  */
 void t_go_generator::generate_service(t_service* tservice) {
-  // add to Makefile
-  f_make_ << "  " << lowercase(service_name_) + ".go\\" << endl;
-  
-  string f_service_name = package_dir_+ "/" + lowercase(service_name_) + ".go";
-  f_service_.open(f_service_name.c_str());
-
   f_service_ <<
     go_autogen_comment() << endl <<
     go_package() << endl <<
