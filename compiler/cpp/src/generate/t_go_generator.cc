@@ -267,8 +267,7 @@ void t_go_generator::init_generator() {
 
   f_consts_ <<
     go_autogen_comment() << endl <<
-    go_package() << endl <<
-		"const (" << endl;
+    go_package() << endl;
 	
 	f_make_ <<
 	  "include $(GOROOT)/src/Make.inc" << endl <<
@@ -332,7 +331,7 @@ string t_go_generator::go_imports() {
 void t_go_generator::close_generator() {
   // Close types file
   f_types_.close();
-	f_consts_ << ")" << endl;
+	f_consts_ << endl;
   f_consts_.close();
   f_make_ << endl <<
     "include $(GOROOT)/src/Make.pkg" << endl;
@@ -402,7 +401,7 @@ void t_go_generator::generate_const(t_const* tconst) {
   string name = tconst->get_name();
   t_const_value* value = tconst->get_value();
 
-  indent(f_consts_) << name << " = " << render_const_value(type, value);
+  indent(f_consts_) << "var " << name << " = " << render_const_value(type, value);
   f_consts_ << endl;
 }
 
