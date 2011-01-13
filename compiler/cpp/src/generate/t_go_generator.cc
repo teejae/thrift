@@ -837,10 +837,6 @@ void t_go_generator::generate_py_function_helpers(t_function* tfunction) {
 /**
  * Generates a service interface definition.
  *
- type SharedService interface {
- 	GetStruct(key int32) *SharedStruct
- }
- 
  * @param tservice The service to generate a header definition for
  */
 void t_go_generator::generate_service_interface(t_service* tservice) {
@@ -849,7 +845,6 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
     extends = tservice->get_extends()->get_program()->get_name() + "." + type_name(tservice->get_extends());
   }
 
-  // FIXME: deal with extends
   generate_go_docstring(f_service_, tservice);
   f_service_ <<
     "type " << tservice->get_name() << " interface {" << endl;
