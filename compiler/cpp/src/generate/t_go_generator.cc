@@ -878,18 +878,11 @@ void t_go_generator::generate_service_interface(t_service* tservice) {
 void t_go_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
-  // FIXME: deal with extends
+  string extends_package_prefix = "";
   if (tservice->get_extends() != NULL) {
-    extends = type_name(tservice->get_extends());
-    if (gen_twisted_) {
-      extends_client = "(" + extends + ".Client)";
-    } else {
-      extends_client = extends + ".Client, ";
-    }
-  } else {
-    if (gen_twisted_ && gen_newstyle_) {
-        extends_client = "(object)";
-    }
+    extends_package_prefix = tservice->get_extends()->get_program()->get_name() + ".";
+    extends_client = type_name(tservice->get_extends()) + "Client";
+    extends = extends_package_prefix + extends_client;
   }
 
   generate_go_docstring(f_service_, tservice);
@@ -900,6 +893,10 @@ void t_go_generator::generate_service_client(t_service* tservice) {
 
   indent_up();
   
+  if (!extends.empty()) {
+    f_service_ <<
+      indent() << "*" << extends << endl;
+  }
   f_service_ <<
     indent() << "iprot thrift.TProtocol" << endl <<
     indent() << "oprot thrift.TProtocol" << endl <<
@@ -911,7 +908,11 @@ void t_go_generator::generate_service_client(t_service* tservice) {
   // Constructor function
   f_service_ << "func New" << client_name << "(iprot, oprot thrift.TProtocol) *" << client_name << " {" << endl;
   indent_up();
-  indent(f_service_) << "return &" << client_name << "{iprot: iprot, oprot: oprot}" << endl;
+  indent(f_service_) << "return &" << client_name << "{iprot: iprot, oprot: oprot";
+  if (!extends.empty()) {
+    f_service_ << ", " << extends_client << ": " << extends_package_prefix << "New" << extends_client << "(iprot, oprot)";
+  }
+  f_service_ << "}" << endl;
   indent_down();
   f_service_ << "}" << endl;
     
