@@ -511,7 +511,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
 }
 
 /**
- * Generates a python struct
+ * Generates a Go struct
  */
 void t_go_generator::generate_struct(t_struct* tstruct) {
   generate_go_struct(tstruct, false);
@@ -2017,7 +2017,7 @@ string t_go_generator::argument_list(t_struct* tstruct) {
 }
 
 /**
- * Converts the parse type to a Python tyoe
+ * Converts the parse type to a Go type
  */
 string t_go_generator::type_to_enum(t_type* type) {
   type = get_true_type(type);
