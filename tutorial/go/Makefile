@@ -1,8 +1,8 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=server
+TARG=client
 GOFILES=\
-	server.go\
+	client.go\
 
 DEPS=../gen-go/shared ../gen-go/tutorial
 

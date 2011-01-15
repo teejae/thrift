@@ -2,69 +2,65 @@ package main
 
 import (
 	"log"
-	"os"
-	"shared"
-	"github.com/teejae/go-thrift/thrift"
+	"tutorial"
 	"github.com/teejae/go-thrift/thrift/protocol"
-	"github.com/teejae/go-thrift/thrift/server"
 	"github.com/teejae/go-thrift/thrift/transport"
 )
 
 func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println("work failed:", err)
-		}
-	}()
+	// Make socket
+	tsock := transport.NewTSocket("localhost", 9090)
 
-	runServer()
-	f, _ := os.Open("shared_struct.tob", os.O_RDONLY, 0)
-
-	t := transport.NewTFileTransport(f)
-	t.Open()
-	log.Println("file: ", t)
-	p := protocol.NewTBinaryProtocol(t, true, true)
-
-	s := shared.NewSharedStruct()
-	s.Read(p)
-
-	t.Close()
-	log.Println("struct: ", s)
-
-	log.Println("writing")
-	f, _ = os.Open("shared_struct_out.tob", os.O_CREATE|os.O_WRONLY, 0777)
-	t = transport.NewTFileTransport(f)
-	log.Println("file: ", t)
-	t.Open()
-	p = protocol.NewTBinaryProtocol(t, true, true)
-	s.Write(p)
-
-	t.Close()
-
-	tsock := transport.NewTSocket("127.0.0.1", 9090)
+	// Wrap in protocol
+	p := protocol.NewTBinaryProtocol(tsock, true, true)
+	
+	// Create a client to use the protocol encoder
+	client := tutorial.NewCalculatorClient(p, p)
+	
+	// Connect!
 	tsock.Open()
-	log.Println("tsock ", tsock)
-	p = protocol.NewTBinaryProtocol(tsock, true, true)
-	c := shared.NewSharedServiceClient(p, p)
-	s, _ = c.GetStruct(1234)
+	
+	client.Ping()
+	log.Println("ping()");
+	
+	work := tutorial.NewWork()
+	
+	work.Op = new(tutorial.Operation)
+	*work.Op = tutorial.Operation_DIVIDE
+	n1 := int32(1)
+	work.Num1 = &n1
+	n2 := int32(0)
+	work.Num2 = &n2
+	
+	quotient, err := client.Calculate(1, *work)
+	if err != nil {
+		log.Println(err.String())
+	} else {
+		log.Println("You know how to divide by 0!")
+		log.Println("quotient", *quotient)
+	}
+	
+	op := tutorial.Operation_SUBTRACT
+	work.Op = &op
+	n1 = int32(15)
+	work.Num1 = &n1
+	n2 = int32(10)
+	work.Num2 = &n2
+	
+	diff, err := client.Calculate(1, *work)
+	if err != nil{
+		log.Println("InvalidOperation: ", err)		
+	}
+	
+	log.Println("15-10=", *diff)
+	
+	s, err := client.GetStruct(1)
+	if err != nil {
+		// panic(err)
+	}
+	
+	log.Println("Check log: ", *s.Value)
+	
+	// Close!
 	tsock.Close()
-	log.Println("getStruct -> ", s)
-}
-
-func runServer() {
-	processor := shared.NewSharedServiceProcessor(&Server{})
-	trans := transport.NewTServerSocket(9090)
-
-	s := server.NewTSimpleServer(processor, trans)
-
-	log.Println("Starting server...")
-	s.Serve()
-	log.Println("Done.")
-}
-
-type Server struct{}
-
-func (s *Server) GetStruct(key int32) (*shared.SharedStruct, thrift.TException) {
-	msg := "you win!"
-	return &shared.SharedStruct{Key: &key, Value: &msg}, nil
 }
