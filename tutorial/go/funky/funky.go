@@ -13,8 +13,9 @@ import (
 type InvalidOperation struct {
 	thrift.TException
 	What *int32
-	Why *string
+	Why  *string
 }
+
 func NewInvalidOperation() *InvalidOperation {
 	return &InvalidOperation{}
 }
@@ -69,10 +70,11 @@ func (s *InvalidOperation) Write(oprot thrift.TProtocol) {
 //  - required_params
 //  - ordered_params
 type DataStruct struct {
-	Query_params *map[*string]*string
+	Query_params    *map[*string]*string
 	Required_params *map[*string]*bool
-	Ordered_params *[]*string
+	Ordered_params  *[]*string
 }
+
 func NewDataStruct() *DataStruct {
 	return &DataStruct{}
 }
@@ -87,7 +89,7 @@ func (s *DataStruct) Read(iprot thrift.TProtocol) {
 		switch fid {
 		case 1:
 			if ftype == thrift.TTYPE_MAP {
-				_, _, size := iprot.ReadMapBegin() 
+				_, _, size := iprot.ReadMapBegin()
 				m := make(map[*string]*string, size)
 				for i := int32(0); i < size; i++ {
 					key := iprot.ReadString()
@@ -138,9 +140,9 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 	if s.Query_params != nil {
 		oprot.WriteFieldBegin("query_params", thrift.TTYPE_MAP, 1)
 		oprot.WriteMapBegin(thrift.TTYPE_STRING, thrift.TTYPE_STRING, int32(len(*s.Query_params)))
-		for k, v := range(*s.Query_params) {
+		for k, v := range *s.Query_params {
 			oprot.WriteString(*k)
-			oprot.WriteString(*v)			
+			oprot.WriteString(*v)
 		}
 		oprot.WriteMapEnd()
 		oprot.WriteFieldEnd()
@@ -148,8 +150,8 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 	if s.Required_params != nil {
 		oprot.WriteFieldBegin("required_params", thrift.TTYPE_SET, 2)
 		oprot.WriteSetBegin(thrift.TTYPE_STRING, int32(len(*s.Required_params)))
-		for k := range(*s.Required_params) {
-			oprot.WriteString(*k)			
+		for k := range *s.Required_params {
+			oprot.WriteString(*k)
 		}
 		oprot.WriteSetEnd()
 		oprot.WriteFieldEnd()
@@ -157,8 +159,8 @@ func (s *DataStruct) Write(oprot thrift.TProtocol) {
 	if s.Ordered_params != nil {
 		oprot.WriteFieldBegin("ordered_params", thrift.TTYPE_LIST, 3)
 		oprot.WriteListBegin(thrift.TTYPE_STRING, int32(len(*s.Ordered_params)))
-		for _, v := range(*s.Ordered_params) {
-			oprot.WriteString(*v)			
+		for _, v := range *s.Ordered_params {
+			oprot.WriteString(*v)
 		}
 		oprot.WriteListEnd()
 		oprot.WriteFieldEnd()
@@ -187,10 +189,11 @@ type SanitizerClient struct {
 	oprot thrift.TProtocol
 	seqid int32
 }
+
 func NewSanitizerClient(iprot, oprot thrift.TProtocol) *SanitizerClient {
 	return &SanitizerClient{
-		iprot: iprot,
-		oprot: oprot,
+		iprot:               iprot,
+		oprot:               oprot,
 		SharedServiceClient: shared.NewSharedServiceClient(iprot, oprot),
 	}
 }
@@ -260,9 +263,10 @@ func (s *SanitizerClient) Recv_Sanitize_params() (*DataStruct, thrift.TException
 }
 
 type SanitizerProcessor struct {
-	handler Sanitizer
+	handler         Sanitizer
 	parentProcessor *shared.SharedServiceProcessor
 }
+
 func NewSanitizerProcessor(handler Sanitizer) *SanitizerProcessor {
 	p := &SanitizerProcessor{handler: handler, parentProcessor: shared.NewSharedServiceProcessor(handler)}
 	return p
@@ -307,8 +311,8 @@ func (p *SanitizerProcessor) process_Sanitize_params(seqid int32, iprot, oprot t
 
 // HELPER FUNCTIONS AND STRUCTURES
 
-type Ping_args struct {
-}
+type Ping_args struct{}
+
 func NewPing_args() *Ping_args {
 	return &Ping_args{}
 }
@@ -334,8 +338,8 @@ func (s *Ping_args) Write(oprot thrift.TProtocol) {
 	oprot.WriteStructEnd()
 }
 
-type Ping_result struct {
-}
+type Ping_result struct{}
+
 func NewPing_result() *Ping_result {
 	return &Ping_result{}
 }
@@ -366,6 +370,7 @@ func (s *Ping_result) Write(oprot thrift.TProtocol) {
 type Sanitize_params_args struct {
 	Request_params *DataStruct
 }
+
 func NewSanitize_params_args() *Sanitize_params_args {
 	return &Sanitize_params_args{}
 }
@@ -408,8 +413,9 @@ func (s *Sanitize_params_args) Write(oprot thrift.TProtocol) {
 //  - ouch
 type Sanitize_params_result struct {
 	Success *DataStruct
-	Ouch *InvalidOperation
+	Ouch    *InvalidOperation
 }
+
 func NewSanitize_params_result() *Sanitize_params_result {
 	return &Sanitize_params_result{}
 }
