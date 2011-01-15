@@ -12,7 +12,6 @@ type TExceptionType int
 
 type TException interface {
 	os.Error
-	Type() *TExceptionType
 	Write(oprot TProtocol)
 	Read(iprot TProtocol)
 }
@@ -29,10 +28,6 @@ type TExceptionImpl struct {
 
 func (e *TExceptionImpl) String() string {
 	return *e.message
-}
-
-func (e *TExceptionImpl) Type() *TExceptionType {
-	return e.eType
 }
 
 func (e *TExceptionImpl) Write(oprot TProtocol) {
