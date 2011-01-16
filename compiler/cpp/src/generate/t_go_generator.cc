@@ -71,7 +71,7 @@ class t_go_generator : public t_generator {
   void generate_xception (t_struct*   txception);
   void generate_service  (t_service*  tservice);
 
-  std::string render_const_value(t_type* type, t_const_value* value);
+  std::string render_const_value(t_type* type, t_const_value* value, std::ostringstream& pre_var_out);
 
   /**
    * Struct generation code
@@ -397,9 +397,14 @@ void t_go_generator::generate_const(t_const* tconst) {
   t_type* type = tconst->get_type();
   string name = tconst->get_name();
   t_const_value* value = tconst->get_value();
+  std::ostringstream pre_var_out;
+  
+  std::ostringstream const_out;
 
-  indent(f_service_) << "var " << name << " = " << render_const_value(type, value);
-  f_service_ << endl;
+  indent(const_out) << "var " << name << " = " << render_const_value(type, value, pre_var_out);
+  const_out << endl;
+  
+  f_service_ << pre_var_out.str() << const_out.str();
 }
 
 /**
@@ -407,7 +412,7 @@ void t_go_generator::generate_const(t_const* tconst) {
  * is NOT performed in this function as it is always run beforehand using the
  * validate_types method in main.cc
  */
-string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
+string t_go_generator::render_const_value(t_type* type, t_const_value* value, ostringstream& pre_var_out) {
   type = get_true_type(type);
   std::ostringstream out;
 
@@ -449,6 +454,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     const map<t_const_value*, t_const_value*>& val = value->get_map();
     map<t_const_value*, t_const_value*>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
+      string v = tmp("_v");
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
@@ -461,7 +467,9 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
       out << indent();
       out << capitalize(v_iter->first->get_string());
       out << " : ";
-      out << render_const_value(field_type, v_iter->second);
+      string value = render_const_value(field_type, v_iter->second, pre_var_out);
+      pre_var_out << "var " << v << " = " << value << endl;
+      out << "&" << v;
       out << "," << endl;
     }
     indent_down();
@@ -475,9 +483,9 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     map<t_const_value*, t_const_value*>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       out << indent();
-      out << render_const_value(ktype, v_iter->first);
+      out << render_const_value(ktype, v_iter->first, pre_var_out);
       out << " : ";
-      out << render_const_value(vtype, v_iter->second);
+      out << render_const_value(vtype, v_iter->second, pre_var_out);
       out << "," << endl;
     }
     indent_down();
@@ -490,7 +498,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     vector<t_const_value*>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       out << indent();
-      out << render_const_value(etype, *v_iter);
+      out << render_const_value(etype, *v_iter, pre_var_out);
       out << " : true," << endl;
     }
     indent_down();
@@ -504,7 +512,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     vector<t_const_value*>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       out << indent();
-      out << render_const_value(etype, *v_iter);
+      out << render_const_value(etype, *v_iter, pre_var_out);
       out << "," << endl;
     }
     indent_down();
@@ -1946,8 +1954,10 @@ string t_go_generator::declare_argument(t_field* tfield) {
  */
 string t_go_generator::render_field_default_value(t_field* tfield) {
   t_type* type = get_true_type(tfield->get_type());
+  std::ostringstream stub;
   if (tfield->get_value() != NULL) {
-    return render_const_value(type, tfield->get_value());
+    // FIXME: do we need this function?
+    return render_const_value(type, tfield->get_value(), stub);
   } else {
     return "None";
   }
