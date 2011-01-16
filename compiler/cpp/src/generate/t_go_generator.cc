@@ -179,6 +179,7 @@ class t_go_generator : public t_generator {
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
+  std::string const_type_name(t_type* ttype);
   std::string function_signature(t_function* tfunction);
   std::string function_signature_if(t_function* tfunction);
   std::string argument_list(t_struct* tstruct);
@@ -441,7 +442,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     indent(out) << value->get_integer();
   } else if (type->is_struct() || type->is_xception()) {
 		// FIXME: finish this
-    out << type->get_name() << "(**{" << endl;
+    out << type_name(type) << "{" << endl;
     indent_up();
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
@@ -458,17 +459,17 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
       out << indent();
-      out << render_const_value(g_type_string, v_iter->first);
+      out << capitalize(v_iter->first->get_string());
       out << " : ";
       out << render_const_value(field_type, v_iter->second);
       out << "," << endl;
     }
     indent_down();
-    indent(out) << "})";
+    indent(out) << "}";
   } else if (type->is_map()) {
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
-    out << "map[" << type_name(ktype) << "]" << type_name(vtype) << " {" << endl;
+    out << "map[" << const_type_name(ktype) << "]" << const_type_name(vtype) << " {" << endl;
     indent_up();
     const map<t_const_value*, t_const_value*>& val = value->get_map();
     map<t_const_value*, t_const_value*>::const_iterator v_iter;
@@ -483,7 +484,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     indent(out) << "}";
   } else if (type->is_set()) {
     t_type* etype = ((t_set*)type)->get_elem_type();
-    out << "map[" << type_name(etype) << "]bool {" << endl;
+    out << "map[" << const_type_name(etype) << "]bool {" << endl;
     indent_up();
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
@@ -497,7 +498,7 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
   } else if (type->is_list()) {
     t_type* etype;
     etype = ((t_list*)type)->get_elem_type();
-    out << "[]" << type_name(etype) << " {" << endl;
+    out << "[]" << const_type_name(etype) << " {" << endl;
     indent_up();
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
@@ -2106,66 +2107,29 @@ string t_go_generator::type_name(t_type* ttype)
   }
   
   return "FIXME:NO_TYPE";
+}
 
-  // // FIXME deal with non-base_types
-  // if (ttype->is_container ())
-  // {
-  //   string cname;
-  // 
-  //   t_container *tcontainer = (t_container *) ttype;
-  //   if (tcontainer->has_cpp_name ())
-  //   {
-  //     cname = tcontainer->get_cpp_name ();
-  //   } else if (ttype->is_map ()) {
-  //     cname = "GHashTable *";
-  //   } else if (ttype->is_set ()) {
-  //     // since a set requires unique elements, use a GHashTable, and
-  //     // populate the keys and values with the same data, using keys for
-  //     // the actual writes and reads.
-  //     // TODO: discuss whether or not to implement TSet, THashSet or GHashSet
-  //     cname = "GHashTable *";
-  //   } else if (ttype->is_list ()) {
-  //     // TODO: investigate other implementations besides GPtrArray
-  //     cname = "GPtrArray *";
-  //     t_type *etype = ((t_list *) ttype)->get_elem_type ();
-  //     if (etype->is_base_type ())
-  //     {
-  //       t_base_type::t_base tbase = ((t_base_type *) etype)->get_base ();
-  //       switch (tbase)
-  //       {
-  //         case t_base_type::TYPE_VOID:
-  //           throw "compiler error: cannot determine array type";
-  //         case t_base_type::TYPE_BOOL:
-  //         case t_base_type::TYPE_BYTE:
-  //         case t_base_type::TYPE_I16:
-  //         case t_base_type::TYPE_I32:
-  //         case t_base_type::TYPE_I64:
-  //         case t_base_type::TYPE_DOUBLE:
-  //           cname = "GArray *";
-  //           break;
-  //         case t_base_type::TYPE_STRING:
-  //           break;
-  //         default:
-  //           throw "compiler error: no array info for type";
-  //       }
-  //     }
-  //   }
-  // 
-  //   if (is_const)
-  //   {
-  //     return "const " + cname;
-  //   } else {
-  //     return cname;
-  //   }
-  // }
-
-  // // check for a namespace
-  // string pname = this->nspace + ttype->get_name ();
-
-  // if (is_complex_type (ttype))
-  // {
-  //   pname += " *";
-  // }
+/**
+ * Maps a Thrift t_type to a C type.
+ */
+string t_go_generator::const_type_name(t_type* ttype)
+{
+  if (ttype->is_container()) {
+    if (ttype->is_map()) {
+      t_map* tmap = (t_map*)ttype;
+      return string("map[") + type_name(tmap->get_key_type()) + "]" + type_name(tmap->get_val_type());
+    }
+    if (ttype->is_set()) {
+      t_set* tset = (t_set*)ttype;
+      return string("map[") + type_name(tset->get_elem_type()) + "]bool";
+    }
+    if (ttype->is_list()) {
+      t_list* tlist = (t_list*)ttype;
+      return string("[]") + type_name(tlist->get_elem_type());
+    }
+  }
+  
+  return type_name(ttype);
 }
 
 /**
