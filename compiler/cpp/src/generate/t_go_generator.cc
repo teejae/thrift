@@ -108,11 +108,13 @@ class t_go_generator : public t_generator {
 
   void generate_deserialize_struct       (std::ofstream &out,
                                           t_struct*   tstruct,
-                                          std::string prefix="");
+                                          std::string prefix="",
+                                          bool newvar=false);
 
   void generate_deserialize_container    (std::ofstream &out,
                                           t_type*     ttype,
-                                          std::string prefix="");
+                                          std::string prefix="",
+                                          bool newvar=false);
 
   void generate_deserialize_set_element  (std::ofstream &out,
                                           t_set*      tset,
@@ -489,7 +491,6 @@ string t_go_generator::render_const_value(t_type* type, t_const_value* value) {
     indent_down();
     indent(out) << "}";
   } else if (type->is_list()) {
-    // FIXME: deal with set
     t_type* etype;
     etype = ((t_list*)type)->get_elem_type();
     out << "[]" << type_name(etype) << " {" << endl;
@@ -1060,7 +1061,6 @@ void t_go_generator::generate_service_client(t_service* tservice) {
         indent(f_service_) << "}" << endl;
       }
 
-      // FIXME: deal with exceptions
       t_struct* xs = (*f_iter)->get_xceptions();
       const std::vector<t_field*>& xceptions = xs->get_members();
       vector<t_field*>::const_iterator x_iter;
@@ -1333,7 +1333,6 @@ void t_go_generator::generate_service_server(t_service* tservice) {
     indent_down();
   }
   // default case for not finding a function
-  // FIXME: deal with extends
   f_service_ <<
     indent() << "default:" << endl;
   indent_up();
@@ -1405,14 +1404,6 @@ void t_go_generator::generate_process_function(t_service* tservice,
       indent() << "result := New" << resultname << "()" << endl;
   }
 
-  // // FIXME: deal with exceptions
-  // // Try block for a function with exceptions
-  // if (xceptions.size() > 0) {
-  //   f_service_ <<
-  //     indent() << "try:" << endl;
-  //   indent_up();
-  // }
-
   // Generate the function call
   t_struct* arg_struct = tfunction->get_arglist();
   const std::vector<t_field*>& fields = arg_struct->get_members();
@@ -1435,24 +1426,6 @@ void t_go_generator::generate_process_function(t_service* tservice,
   }
   f_service_ << ")" << endl;
 
-  // if (!tfunction->is_oneway() && xceptions.size() > 0) {
-  //   indent_down();
-  //   for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-  //     f_service_ <<
-  //       indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
-  //     if (!tfunction->is_oneway()) {
-  //       indent_up();
-  //       f_service_ <<
-  //         indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
-  //       indent_down();
-  //     } else {
-  //       f_service_ <<
-  //         indent() << "pass" << endl;
-  //     }
-  //   }
-  // }
-
-  // FIXME: deal w/ oneway
   // Shortcut out here for oneway functions
   if (tfunction->is_oneway()) {
     f_service_ <<
@@ -1492,9 +1465,9 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
   if (type->is_struct() || type->is_xception()) {
     generate_deserialize_struct(out,
                                 (t_struct*)type,
-                                 name);
+                                 name, newvar);
   } else if (type->is_container()) {
-    generate_deserialize_container(out, type, name);
+    generate_deserialize_container(out, type, name, newvar);
   } else if (type->is_base_type() || type->is_enum()) {
     string v = tmp("_v");
     indent(out) <<
@@ -1541,14 +1514,9 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
       getter += "ReadI32()";
       getter = type->get_name() + "(" + getter + ")";
     }
+    string assign = newvar ? " := " : " = ";
     out << getter << endl;
-    indent(out) << name << " ";
-    if (newvar) {
-      out << ":=";
-    } else {
-      out << "=";
-    }
-    out << " &" << v << endl;
+    indent(out) << name << assign << "&" << v << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
            tfield->get_name().c_str(), type->get_name().c_str());
@@ -1560,9 +1528,11 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
  */
 void t_go_generator::generate_deserialize_struct(ofstream &out,
                                                   t_struct* tstruct,
-                                                  string prefix) {
+                                                  string prefix,
+                                                  bool newvar) {
+  string assign = newvar ? " := " : " = ";
   out <<
-    indent() << prefix << " = New" << capitalize(type_name(tstruct)) << "()" << endl <<
+    indent() << prefix << assign << "New" << capitalize(type_name(tstruct)) << "()" << endl <<
     indent() << prefix << ".Read(iprot)" << endl;
 }
 
@@ -1572,7 +1542,8 @@ void t_go_generator::generate_deserialize_struct(ofstream &out,
  */
 void t_go_generator::generate_deserialize_container(ofstream &out,
                                                     t_type* ttype,
-                                                    string prefix) {
+                                                    string prefix,
+                                                    bool newvar) {
   string size = tmp("_size");
   string holder = tmp("_holder");
 
@@ -1614,7 +1585,8 @@ void t_go_generator::generate_deserialize_container(ofstream &out,
   indent(out) << "}" << endl;
 
   // Read container end
-  indent(out) << prefix << " = &" << holder << endl;
+  string assign = newvar ? " := " : " = ";
+  indent(out) << prefix << assign << "&" << holder << endl;
   if (ttype->is_map()) {
     indent(out) << "iprot.ReadMapEnd()" << endl;
   } else if (ttype->is_set()) {
@@ -2100,7 +2072,7 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
-  if (ttype->is_struct() || ttype->is_xception() || ttype->is_service() || ttype->is_enum()) {
+  if (ttype->is_struct() || ttype->is_xception() || ttype->is_service() || ttype->is_enum() || ttype->is_typedef()) {
     return ttype->get_name();
   }
 
@@ -2199,7 +2171,7 @@ string t_go_generator::base_type_name(t_base_type* type) {
   case t_base_type::TYPE_BOOL:
     return "bool";
   case t_base_type::TYPE_BYTE:
-    return "int8";
+    return "uint8";
   case t_base_type::TYPE_I16:
     return "int16";
   case t_base_type::TYPE_I32:
