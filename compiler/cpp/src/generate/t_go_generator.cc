@@ -341,7 +341,7 @@ void t_go_generator::close_generator() {
  */
 void t_go_generator::generate_typedef(t_typedef* ttypedef) {
   f_service_ <<
-    indent() << "type " << ttypedef->get_symbolic () << " " << type_name(ttypedef->get_type()) << endl;
+    indent() << "type " << capitalize(ttypedef->get_symbolic()) << " " << type_name(ttypedef->get_type()) << endl;
 }
 
 /**
@@ -1467,7 +1467,7 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
                                 (t_struct*)type,
                                  name, newvar);
   } else if (type->is_container()) {
-    generate_deserialize_container(out, type, name, newvar);
+    generate_deserialize_container(out, ftype, name, newvar);
   } else if (type->is_base_type() || type->is_enum()) {
     string v = tmp("_v");
     indent(out) <<
@@ -1546,29 +1546,38 @@ void t_go_generator::generate_deserialize_struct(ofstream &out,
  * data and then a footer.
  */
 void t_go_generator::generate_deserialize_container(ofstream &out,
-                                                    t_type* ttype,
+                                                    t_type* type,
                                                     string prefix,
                                                     bool newvar) {
+  t_type* ttype = get_true_type(type);
   string size = tmp("_size");
   string holder = tmp("_holder");
+
+  string cast_prefix = "";
+  string cast_suffix = "";
+  if (type->is_typedef()) {
+    string cast_type_name = type_name(type);
+    cast_prefix = cast_type_name + "(";
+    cast_suffix = ")";
+  }
 
   // Declare variables, read header
   if (ttype->is_map()) {
     t_map* tmap = (t_map*)ttype;
     out <<
       indent() << "_, _, " << size << " := iprot.ReadMapBegin() " << endl <<
-      indent() << holder << " := make(map[*" << type_name(tmap->get_key_type()) << "]*" << type_name(tmap->get_val_type()) <<
-        ", " << size << ")" << endl;
+      indent() << holder << " := " << cast_prefix << "make(map[*" << type_name(tmap->get_key_type()) << "]*" << type_name(tmap->get_val_type()) <<
+        ", " << size << ")" << cast_suffix << endl;
   } else if (ttype->is_set()) {
     t_set* tset = (t_set*)ttype;
     out <<
       indent() << "_, " << size << " := iprot.ReadSetBegin()" << endl <<
-      indent() << holder << " := make(map[*" << type_name(tset->get_elem_type()) << "]*bool, " << size << ")" << endl;
+      indent() << holder << " := " << cast_prefix << "make(map[*" << type_name(tset->get_elem_type()) << "]*bool, " << size << ")" << cast_suffix << endl;
   } else if (ttype->is_list()) {
     t_list* tlist = (t_list*)ttype;
     out <<
       indent() << "_, " << size << " := iprot.ReadListBegin()" << endl <<
-      indent() << holder << " := make([]*" << type_name(tlist->get_elem_type()) << ", " << size << ")" << endl;
+      indent() << holder << " := " << cast_prefix << "make([]*" << type_name(tlist->get_elem_type()) << ", " << size << ")" << cast_suffix << endl;
   }
 
   // For loop iterates over elements
@@ -2077,8 +2086,8 @@ string t_go_generator::type_name(t_type* ttype)
     return base_type_name((t_base_type *) ttype);
   }
 
-  if (ttype->is_struct() || ttype->is_xception() || ttype->is_service() || ttype->is_enum() || ttype->is_typedef()) {
-    return ttype->get_name();
+  if (ttype->is_xception() || ttype->is_struct() || ttype->is_typedef() || ttype->is_service() || ttype->is_enum()) {
+    return capitalize(ttype->get_name());
   }
 
   if (ttype->is_container()) {
