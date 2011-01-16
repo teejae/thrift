@@ -1030,14 +1030,14 @@ void t_go_generator::generate_service_client(t_service* tservice) {
       f_service_ <<
         indent() << "x := thrift.NewTApplicationException(thrift.TAPPLICATION_EXCEPTION_UNKNOWN, \"\")" << endl <<
         indent() << "x.Read(s.iprot)" << endl;
-      
-      if ((*f_iter)->get_returntype()->is_void()) {
-        f_service_ <<
-          indent() << "return x" << endl;
-      } else {
-        f_service_ <<
-          indent() << "return nil, x" << endl;        
+
+      string success_value = "";
+      if (!(*f_iter)->get_returntype()->is_void()) {
+        success_value = "nil, ";
       }
+      
+      f_service_ <<
+        indent() << "return " << success_value << "x" << endl;
       indent_down();
       
       f_service_ <<
@@ -1063,7 +1063,7 @@ void t_go_generator::generate_service_client(t_service* tservice) {
         f_service_ <<
           indent() << "if result." << exception_name << " != nil {" << endl;
         indent_up();
-        indent(f_service_) << "return nil, result." << exception_name << endl;
+        indent(f_service_) << "return " << success_value << "result." << exception_name << endl;
         indent_down();
         indent(f_service_) << "}" << endl;
       }
