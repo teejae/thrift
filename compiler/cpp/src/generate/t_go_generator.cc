@@ -1453,7 +1453,8 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
                                                 t_field* tfield,
                                                 string prefix,
                                                 bool newvar) {
-  t_type* type = get_true_type(tfield->get_type());
+  t_type* ftype = tfield->get_type();
+  t_type* type = get_true_type(ftype);
 
   if (type->is_void()) {
     throw "CANNOT GENERATE DESERIALIZE CODE FOR void TYPE: " +
@@ -1461,6 +1462,11 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
   }
 
   string name = prefix + capitalize(tfield->get_name());
+
+  string cast_type_name = "";
+  if (ftype->is_typedef()) {
+    cast_type_name = type_name(ftype);
+  }
 
   if (type->is_struct() || type->is_xception()) {
     generate_deserialize_struct(out,
@@ -1514,8 +1520,13 @@ void t_go_generator::generate_deserialize_field(ofstream &out,
       getter += "ReadI32()";
       getter = type->get_name() + "(" + getter + ")";
     }
-    string assign = newvar ? " := " : " = ";
+    
+    if (!cast_type_name.empty()) {
+      getter = cast_type_name + "(" + getter + ")";
+    }
+    
     out << getter << endl;
+    string assign = newvar ? " := " : " = ";
     indent(out) << name << assign << "&" << v << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
@@ -1697,22 +1708,22 @@ void t_go_generator::generate_serialize_field(ofstream &out,
         }
         break;
       case t_base_type::TYPE_BOOL:
-        out << "WriteBool(" << name << ")";
+        out << "WriteBool(bool(" << name << "))";
         break;
       case t_base_type::TYPE_BYTE:
-        out << "WriteByte(" << name << ")";
+        out << "WriteByte(byte(" << name << "))";
         break;
       case t_base_type::TYPE_I16:
-        out << "WriteI16(" << name << ")";
+        out << "WriteI16(int16(" << name << "))";
         break;
       case t_base_type::TYPE_I32:
-        out << "WriteI32(" << name << ")";
+        out << "WriteI32(int32(" << name << "))";
         break;
       case t_base_type::TYPE_I64:
-        out << "WriteI64(" << name << ")";
+        out << "WriteI64(int64(" << name << "))";
         break;
       case t_base_type::TYPE_DOUBLE:
-        out << "WriteDouble(" << name << ")";
+        out << "WriteDouble(float64(" << name << "))";
         break;
       default:
         throw "compiler error: no Go name for base type " + t_base_type::t_base_name(tbase);
