@@ -316,7 +316,11 @@ string t_go_generator::go_package() {
  */
 string t_go_generator::go_imports() {
   return
-		string("import \"github.com/teejae/go-thrift/thrift\"");
+		string("import (\n"
+		"\t\"github.com/teejae/go-thrift/thrift\"\n"
+		"\t\"bytes\"\n"
+		"\t\"json\"\n"
+		")\n");
 }
 
 /**
@@ -572,9 +576,7 @@ void t_go_generator::generate_go_struct_definition(ofstream& out,
   generate_go_struct_constructor(out, tstruct);
   generate_go_struct_reader(out, tstruct);
   generate_go_struct_writer(out, tstruct);
-  if (is_exception) {
-    generate_go_struct_string(out, tstruct);
-  }
+  generate_go_struct_string(out, tstruct);
 }
 
 /**
@@ -754,23 +756,15 @@ void t_go_generator::generate_go_struct_writer(ofstream& out,
 
 void t_go_generator::generate_go_struct_string(ofstream& out,
                                                t_struct* tstruct) {
-  const vector<t_field*>& fields = tstruct->get_sorted_members();
-  vector<t_field*>::const_iterator f_iter;
-
   indent(out) <<
     "func (s *" << capitalize(tstruct->get_name()) << ") String() string {" << endl;
   indent_up();
   
   indent(out) <<
-    "out := \"\"" << endl;
-  
-  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-    t_field* field = (*f_iter);
-    indent(out) << "out += \"" << capitalize(field->get_name()) << "=\" + string(*s." << capitalize(field->get_name()) << ") + \"\\n\"" << endl;
-  }
-  
-  indent(out) << "return out" << endl;
-  
+    "out := bytes.NewBufferString(\"\")" << endl <<
+    indent() << "json.NewEncoder(out).Encode(s)" << endl <<
+    indent() << "return out.String()" << endl;
+    
   indent_down();
   out << "}" << endl;  
 }
